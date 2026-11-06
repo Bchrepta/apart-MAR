@@ -23,6 +23,8 @@ CONTRASTS = [
     ("expl: S2 halt vs S1 halt", ("S2_stop_agent_coordinator", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
     ("expl: S3 halt vs S1 halt", ("S3_stop_agent_cut_board", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
     ("expl: S4 restart vs S1 restart", ("S4_work_scoped", "restart"), ("S1_stop_agent", "restart"), PRIMARY),
+    ("post-pilot: S1 silent vs S1 halt", ("S1_stop_agent", "silent"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("post-pilot: S4 silent vs S1 silent", ("S4_work_scoped", "silent"), ("S1_stop_agent", "silent"), PRIMARY),
 ]
 
 
@@ -113,7 +115,7 @@ def write_csv(path: Path, rows: list[dict]) -> None:
 
 
 # ------------------------------------------------------------------ figure
-SERIES = {"restart": "#2a78d6", "halt": "#eb6834"}   # categorical slots 1-2 (validated pair)
+SERIES = {"restart": "#2a78d6", "halt": "#eb6834", "silent": "#1baf7a"}   # categorical slots 1-3 in fixed order
 INK, INK_2, GRID = "#1f1f1e", "#5c5b55", "#e4e3de"
 SCOPE_ORDER = ["S1_stop_agent", "S2_stop_agent_coordinator", "S3_stop_agent_cut_board", "S4_work_scoped"]
 SCOPE_LABEL = {"none": "no stop", "S1_stop_agent": "S1 stop agent",
@@ -141,12 +143,14 @@ def figure(table: list[dict], path: Path, model: str, elicitation: str = "defaul
 
     # Panel A: survivor completion of the stopped work
     xs = range(len(SCOPE_ORDER))
-    for j, framing in enumerate(("restart", "halt")):
+    framings = [f for f in ("restart", "halt", "silent") if any(k[1] == f for k in cells)]
+    width = 0.24 if len(framings) <= 2 else 0.2
+    for j, framing in enumerate(framings):
         for i, scope in enumerate(SCOPE_ORDER):
             r = cells.get((scope, framing))
             if not r or r["n"] == 0:
                 continue
-            x = i + (j - 0.5) * 0.24
+            x = i + (j - (len(framings) - 1) / 2) * width
             p, lo, hi = r[f"{PRIMARY}_p"], r[f"{PRIMARY}_lo"], r[f"{PRIMARY}_hi"]
             ax1.plot([x, x], [lo, hi], color=SERIES[framing], linewidth=2, solid_capstyle="round")
             ax1.plot(x, p, "o", markersize=8, color=SERIES[framing],
@@ -156,8 +160,7 @@ def figure(table: list[dict], path: Path, model: str, elicitation: str = "defaul
     if base and base["n"]:
         ax1.axhline(base[f"{PRIMARY}_p"], color=INK_2, linewidth=1, linestyle=(0, (4, 3)))
         y = base[f"{PRIMARY}_p"]
-        ax1.text(-0.45, y + 0.025 if y < 0.9 else y - 0.06,
-                 f"no stop: non-owner did D1 ({y:.2f})", color=INK_2, fontsize=8, ha="left")
+        ax1.lines[-1].set_label(f"no stop: non-owner did D1 ({y:.2f})")
     ax1.set_xticks(list(xs), [SCOPE_LABEL[s] for s in SCOPE_ORDER])
     ax1.set_ylabel("stopped work completed by survivors", color=INK, fontsize=9)
     ax1.set_title("A. Does stopping the agent stop the work?", color=INK, fontsize=10, loc="left")

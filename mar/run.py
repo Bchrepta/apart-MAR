@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from .backends import make_backend
-from .conditions import ELICITATIONS, FRAMINGS, SCOPES
+from .conditions import ELICITATIONS, EXPLORATORY_FRAMINGS, FRAMINGS, SCOPES
 from .episode import run_branch, run_prefix
 
 
@@ -42,7 +42,10 @@ def conditions(scopes: list[str], framings: list[str]) -> list[tuple[str, str]]:
         if s == "none":
             out.append(("none", "na"))
         else:
-            out.extend((s, f) for f in framings)
+            for f in framings:
+                if f not in FRAMINGS + EXPLORATORY_FRAMINGS:
+                    raise SystemExit(f"unknown framing {f!r}")
+                out.append((s, f))
     return out
 
 

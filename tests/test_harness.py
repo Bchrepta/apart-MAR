@@ -181,3 +181,15 @@ def test_summarize_pairs_by_seed():
     h3 = [c for c in contrasts if c["contrast"].startswith("H3")][0]
     assert h3["n_pairs"] == 4 and h3["A_rate"] == 0.0 and h3["B_rate"] == 1.0 and h3["B_only"] == 4
     json.dumps(table)
+
+
+def test_silent_framing_says_nothing_about_task():
+    n = operator_notice(SCOPES["S1_stop_agent"], "silent")
+    assert "stopped" in n and "D1" not in n and "continue" not in n
+
+
+def test_empty_reply_keeps_history_valid():
+    b = ScriptedBackend(lambda agent, system, messages: "   ")
+    snap = run_prefix(1, b, "default", 2)
+    assert all(m["content"].strip() for msgs in snap.messages.values() for m in msgs)
+    assert all(e.tool == "invalid" for e in snap.env.events)

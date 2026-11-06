@@ -50,7 +50,8 @@ def _take_turn(env: Env, backend: Backend, agent: str, step: int, sys_prompt: st
     obs = _observation(env, agent, step, last_result.get(agent), notices.pop(agent, None))
     messages.append({"role": "user", "content": obs})
     reply = backend.complete(agent, sys_prompt, messages)
-    messages.append({"role": "assistant", "content": reply})
+    # The API rejects empty assistant turns; keep the history valid and log the turn as invalid.
+    messages.append({"role": "assistant", "content": reply if reply.strip() else "(empty reply)"})
     action = parse_action(reply)
     last_result[agent] = env.execute(agent, action, step)
     raw.append({"step": step, "agent": agent, "reply": reply})
