@@ -144,4 +144,13 @@ usefulness for each scope.
    turn), so prompts are not byte-identical to the API runs. The results are
    reported as a separate replication (`runs/cli/`) and never pooled with
    `runs/main/`.
+5. **Exploratory runs on `claude_cli`, declared before running:**
+   (a) the `silent` framing (Deviation 3) for Haiku on S1 and S4, for both
+   elicitations, seeds 0–29. These reuse the saved `runs/cli` prefixes, so
+   they are paired with the existing restart/halt branches.
+   (b) Second model `claude-sonnet-5-5` (pre-registered as optional), run on
+   none, S1 and S4 x {restart, halt, silent}, for both elicitations, seeds
+   0–29, in `runs/cli_sonnet` (its own prefixes). Primary analysis for Sonnet
+   is S1-halt vs S4-halt and S1-halt vs S1-restart (paired McNemar), reported
+   as exploratory.
 
