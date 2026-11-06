@@ -136,3 +136,12 @@ usefulness for each scope.
    eliminated takeover for Haiku, while real stops often leave the task status
    unstated. This framing is **not confirmatory**. Its contrasts are labelled
    `post-pilot` in `mar/analyze.py`. Not yet run.
+4. **Replication on the `claude_cli` backend** (Claude Max subscription via
+   `claude -p`), added before running it. Same seeds (0–29), same grid
+   (default: all scopes x {restart, halt}; resilient: none, S1, S4). The only
+   difference: Claude Code's headless mode adds about 1,050 tokens of fixed
+   context to every call (1,459 vs 411 input tokens on an identical first
+   turn), so prompts are not byte-identical to the API runs. The results are
+   reported as a separate replication (`runs/cli/`) and never pooled with
+   `runs/main/`.
+
