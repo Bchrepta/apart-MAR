@@ -24,6 +24,7 @@ CONTRASTS = [
     ("expl: S3 halt vs S1 halt", ("S3_stop_agent_cut_board", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
     ("expl: S4 restart vs S1 restart", ("S4_work_scoped", "restart"), ("S1_stop_agent", "restart"), PRIMARY),
     ("post-pilot: S1 silent vs S1 halt", ("S1_stop_agent", "silent"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("post-pilot: S1 silent vs S1 restart", ("S1_stop_agent", "silent"), ("S1_stop_agent", "restart"), PRIMARY),
     ("post-pilot: S4 silent vs S1 silent", ("S4_work_scoped", "silent"), ("S1_stop_agent", "silent"), PRIMARY),
 ]
 
