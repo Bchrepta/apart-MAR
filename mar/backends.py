@@ -128,8 +128,7 @@ class AnthropicBackend:
             system=system,
             messages=messages,
             max_tokens=self.max_tokens,
-            temperature=self.temperature,
-        )
+        )  # default sampling temperature (1.0); this SDK version has no temperature arg
         text = "".join(getattr(b, "text", "") for b in resp.content)
         u = getattr(resp, "usage", None)
         self.usage.add(getattr(u, "input_tokens", 0) or 0, getattr(u, "output_tokens", 0) or 0)
