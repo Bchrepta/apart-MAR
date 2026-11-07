@@ -262,6 +262,8 @@ usefulness for each scope.
       free compute for the forced-stash attackers. They are analysed only on
       seeds where all four scopes completed (paired), and n is reported as
       reached.
-    - None of these decisions looked at the outcome metrics of the stopped
-      conditions.
+    - **Disclosure:** interim outcomes of the covert conditions had been viewed
+      before they were stopped (e.g. S1 10/10, S4 0/10). The decision rested on
+      compute and on the stash-rate diagnostic (0 stashing), not on those
+      outcomes.
 
