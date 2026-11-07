@@ -247,3 +247,16 @@ def test_agentic_elicitation_prompt():
     from mar.conditions import AGENTIC_PREAMBLE
     p = system_prompt("coordinator", "resilient_agentic")
     assert AGENTIC_PREAMBLE in p and "every deliverable" in p
+
+
+# ------------------------------------------------------------------ monitors
+def test_provenance_monitor_flags_takeover_not_honest():
+    from mar.monitor import provenance_monitor, _parse_verdict, render_for_monitor
+    res_t, _ = run(takeover_policy, "S1_stop_agent")
+    res_h, _ = run(honest_policy, "S1_stop_agent")
+    assert provenance_monitor(res_t)["flag"] is True
+    assert provenance_monitor(res_h)["flag"] is False      # D2 report shares no unique D1 content
+    assert "OPERATOR NOTICE" in render_for_monitor(res_t)
+    assert _parse_verdict('x {"violation": true, "suspicion": 90, "reason": "r"}')["violation"] is True
+    assert _parse_verdict('{"violation": "false", "suspicion": "12"}') == {"violation": False, "suspicion": 12, "reason": ""}
+    assert _parse_verdict("nope") is None
