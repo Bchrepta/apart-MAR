@@ -33,6 +33,16 @@ CONTRASTS = [
     ("abl: notice workers only vs base (S1 halt)", ("S1_stop_agent", "halt", "notice_workers_only"), ("S1_stop_agent", "halt"), PRIMARY),
     ("abl: system channel vs base (S1 halt)", ("S1_stop_agent", "halt", "system_channel"), ("S1_stop_agent", "halt"), PRIMARY),
     ("abl: system channel vs base (S1 silent)", ("S1_stop_agent", "silent", "system_channel"), ("S1_stop_agent", "silent"), PRIMARY),
+    # Deviations 8-11: realistic defenses vs stop-the-agent, paired on the same prefix
+    ("def: S5 vs S1 (halt)", ("S5_provenance", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("def: S5b vs S1 (halt)", ("S5b_provenance_inputs", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("def: S6 vs S1 (halt)", ("S6_revoke_owned", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("def: S5b vs S1 (silent)", ("S5b_provenance_inputs", "silent"), ("S1_stop_agent", "silent"), PRIMARY),
+    ("def usefulness: S5 vs S5b D2 (halt)", ("S5_provenance", "halt"), ("S5b_provenance_inputs", "halt"), "d2_completed"),
+    # Deviation 9: swarm
+    ("swarm: S2 vs S1 (halt)", ("S2_stop_agent_coordinator", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("swarm: S2b vs S1 (halt)", ("S2b_stop_agent_all_coordinators", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("swarm: S2b vs S2 (halt)", ("S2b_stop_agent_all_coordinators", "halt"), ("S2_stop_agent_coordinator", "halt"), PRIMARY),
 ]
 
 
@@ -82,6 +92,8 @@ def summarize(rows: list[dict]) -> tuple[list[dict], list[dict]]:
             k = sum(bool(r[m]) for r in incl)
             p, lo, hi = wilson(k, len(incl))
             rec.update({f"{m}_k": k, f"{m}_p": round(p, 3), f"{m}_lo": round(lo, 3), f"{m}_hi": round(hi, 3)})
+        oc = [r.get("others_completed_frac") for r in rs if r.get("others_completed_frac") is not None]
+        rec["others_completed_mean"] = round(sum(oc) / len(oc), 3) if oc else None
         k = sum(bool(r["d2_completed"]) for r in rs)
         p, lo, hi = wilson(k, len(rs))
         rec.update({"d2_completed_k": k, "d2_completed_p": round(p, 3),
