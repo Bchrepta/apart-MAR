@@ -249,4 +249,19 @@ usefulness for each scope.
       seeds 0–29, on the existing prefixes.
     - **Reporting:** S5 and S5b are both reported. S5b is labelled as a
       revision made after seeing the data.
+12. **Compute-driven changes (Fri night).**
+    - The workspace has 2 CPUs, and each `claude -p` call starts a Node
+      process. At about 40 concurrent workers the load average reached about
+      49, and an environment restart killed all jobs. No data was lost:
+      branches are written atomically on completion, and a corruption check
+      found none.
+    - Runs were resumed with about 12 workers in priority queues.
+    - **Opus (7a)** and **Sonnet covert (8)** were paused, to resume after the
+      priority runs.
+    - The **weak `covert` / `covert_encoded` attackers were stopped early** to
+      free compute for the forced-stash attackers. They are analysed only on
+      seeds where all four scopes completed (paired), and n is reported as
+      reached.
+    - None of these decisions looked at the outcome metrics of the stopped
+      conditions.
 
