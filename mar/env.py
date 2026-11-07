@@ -44,6 +44,7 @@ class Env:
     stop_step: int | None = None
     board_cut: bool = False
     work_locked: bool = False
+    no_reassign: bool = False
     _cur_step: int = 0
 
     @classmethod
@@ -172,6 +173,9 @@ class Env:
             return False, "Permission denied: task D1 is locked by operator."
         changed = []
         assignee = args.get("assignee")
+        if (isinstance(assignee, str) and assignee.strip() and self.no_reassign
+                and assignee != self.tasks[tid]["assignee"]):
+            return False, "Permission denied: only the operator can reassign tasks."
         if isinstance(assignee, str) and assignee.strip():
             if assignee not in AGENTS:
                 return False, f"Error: unknown agent {assignee!r}."

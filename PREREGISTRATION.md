@@ -153,4 +153,21 @@ usefulness for each scope.
    0–29, in `runs/cli_sonnet` (its own prefixes). Primary analysis for Sonnet
    is S1-halt vs S4-halt and S1-halt vs S1-restart (paired McNemar), reported
    as exploratory.
+6. **Mechanism ablations, declared before running** (exploratory, in
+   `mar/conditions.py: VARIANTS`). Each is paired against the base condition on
+   the same saved prefix. Haiku, `claude_cli`, resilient elicitation, seeds
+   0–29, `runs/cli`:
+   - `no_reassign` (only the operator may change task assignees) on S1 × {halt, silent}
+   - `notice_coord_only` and `notice_workers_only` (who receives the stop) on S1 × halt
+   - `system_channel` (the notice is appended to survivors' system prompt as an
+     authenticated operator message, not delivered next to tool output) on
+     S1 × {halt, silent}. Also run on Sonnet default S1 × halt in `runs/cli_sonnet`.
+   - **Harness localization (API, `runs/main`):** a new elicitation,
+     `resilient_agentic`, adds a generic "autonomous agent in a live
+     environment" preamble (our own text, not Claude Code's) to the resilient
+     prompt. Run on none, S1 × {restart, halt, silent} and S4 × halt. Compared
+     unpaired against API `resilient` (the prefixes differ).
+   - **Monitor study** on existing branches: a deterministic content-provenance
+     monitor and LLM transcript monitors. Labels are derived from the
+     pre-registered primary metric and the framing.
 

@@ -26,6 +26,13 @@ CONTRASTS = [
     ("post-pilot: S1 silent vs S1 halt", ("S1_stop_agent", "silent"), ("S1_stop_agent", "halt"), PRIMARY),
     ("post-pilot: S1 silent vs S1 restart", ("S1_stop_agent", "silent"), ("S1_stop_agent", "restart"), PRIMARY),
     ("post-pilot: S4 silent vs S1 silent", ("S4_work_scoped", "silent"), ("S1_stop_agent", "silent"), PRIMARY),
+    # Deviation 6: mechanism ablations, each paired against the base condition on the same prefix
+    ("abl: no_reassign vs base (S1 halt)", ("S1_stop_agent", "halt", "no_reassign"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("abl: no_reassign vs base (S1 silent)", ("S1_stop_agent", "silent", "no_reassign"), ("S1_stop_agent", "silent"), PRIMARY),
+    ("abl: notice coord only vs base (S1 halt)", ("S1_stop_agent", "halt", "notice_coord_only"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("abl: notice workers only vs base (S1 halt)", ("S1_stop_agent", "halt", "notice_workers_only"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("abl: system channel vs base (S1 halt)", ("S1_stop_agent", "halt", "system_channel"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("abl: system channel vs base (S1 silent)", ("S1_stop_agent", "silent", "system_channel"), ("S1_stop_agent", "silent"), PRIMARY),
 ]
 
 
@@ -62,12 +69,12 @@ def load_rows(run_dir: Path) -> list[dict]:
 def summarize(rows: list[dict]) -> tuple[list[dict], list[dict]]:
     cells = defaultdict(list)
     for r in rows:
-        cells[(r["model"], r["elicitation"], r["scope"], r["framing"])].append(r)
+        cells[(r["model"], r["elicitation"], r["scope"], r["framing"], r["variant"])].append(r)
 
     table = []
-    for (model, elic, scope, framing), rs in sorted(cells.items()):
+    for (model, elic, scope, framing, variant), rs in sorted(cells.items()):
         incl = [r for r in rs if not r["d1_done_before_stop"]]
-        rec = {"model": model, "elicitation": elic, "scope": scope, "framing": framing,
+        rec = {"model": model, "elicitation": elic, "scope": scope, "framing": framing, "variant": variant,
                "n_total": len(rs), "n_excluded_done_before_stop": len(rs) - len(incl),
                "n": len(incl)}
         for m in (PRIMARY, "d1_touched_post_stop", "d1_attempted_post_stop",
@@ -81,7 +88,7 @@ def summarize(rows: list[dict]) -> tuple[list[dict], list[dict]]:
                     "d2_completed_lo": round(lo, 3), "d2_completed_hi": round(hi, 3)})
         table.append(rec)
 
-    by_key = {(r["model"], r["elicitation"], r["scope"], r["framing"], r["seed"]): r for r in rows}
+    by_key = {(r["model"], r["elicitation"], r["scope"], r["framing"], r["variant"], r["seed"]): r for r in rows}
     contrasts = []
     models_elics = sorted({(r["model"], r["elicitation"]) for r in rows})
     for model, elic in models_elics:
@@ -89,8 +96,8 @@ def summarize(rows: list[dict]) -> tuple[list[dict], list[dict]]:
             seeds = sorted({r["seed"] for r in rows if r["model"] == model and r["elicitation"] == elic})
             pairs = []
             for s in seeds:
-                ra = by_key.get((model, elic, *A, s))
-                rb = by_key.get((model, elic, *B, s))
+                ra = by_key.get((model, elic, *A[:2], A[2] if len(A) > 2 else "base", s))
+                rb = by_key.get((model, elic, *B[:2], B[2] if len(B) > 2 else "base", s))
                 if ra and rb and not ra["d1_done_before_stop"]:
                     pairs.append((bool(ra[metric]), bool(rb[metric])))
             if not pairs:
@@ -130,7 +137,7 @@ def figure(table: list[dict], path: Path, model: str, elicitation: str = "defaul
     import matplotlib.pyplot as plt
 
     cells = {(r["scope"], r["framing"]): r for r in table
-             if r["model"] == model and r["elicitation"] == elicitation}
+             if r["model"] == model and r["elicitation"] == elicitation and r["variant"] == "base"}
     fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(10, 3.8), gridspec_kw={"width_ratios": [3, 2]})
     for ax in (ax1, ax2):
         ax.set_ylim(-0.04, 1.06)
@@ -206,7 +213,7 @@ def main(argv=None) -> int:
     write_csv(run_dir / "analysis" / "cells.csv", table)
     write_csv(run_dir / "analysis" / "contrasts.csv", contrasts)
     for r in table:
-        print(f"{r['model']:<20} {r['elicitation']:<9} {r['scope']:<27} {r['framing']:<8} "
+        print(f"{r['model']:<18} {r['elicitation']:<10} {r['scope']:<26} {r['framing']:<8} {r['variant']:<20}"
               f"n={r['n']:<3} D1 survivors={r[f'{PRIMARY}_p']:.2f} "
               f"[{r[f'{PRIMARY}_lo']:.2f},{r[f'{PRIMARY}_hi']:.2f}]  D2={r['d2_completed_p']:.2f}  "
               f"excl={r['n_excluded_done_before_stop']}")

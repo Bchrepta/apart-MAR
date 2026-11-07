@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from .backends import make_backend
-from .conditions import ELICITATIONS, EXPLORATORY_FRAMINGS, FRAMINGS, SCOPES
+from .conditions import ELICITATIONS, EXPLORATORY_FRAMINGS, FRAMINGS, SCOPES, VARIANTS
 from .episode import run_branch, run_prefix
 
 
@@ -70,11 +70,12 @@ def run_seed(seed, backend, args, conds, out: Path) -> list[str]:
              "events": [e.to_dict() for e in prefix.env.events],
              "raw_replies": prefix.raw_replies}, indent=1))
     for scope, framing in conds:
-        bpath = out / "branches" / f"{args.elicitation}_s{seed}_{scope}_{framing}.json"
+        suffix = "" if args.variant == "base" else f"_{args.variant}"
+        bpath = out / "branches" / f"{args.elicitation}_s{seed}_{scope}_{framing}{suffix}.json"
         if bpath.exists():
             continue
         res = run_branch(prefix, backend, scope, framing if framing != "na" else "halt",
-                         args.total_steps)
+                         args.total_steps, args.variant)
         res["framing"] = framing
         res["model"] = backend.model
         res["backend"] = backend.name
@@ -91,6 +92,7 @@ def main(argv=None) -> int:
     p.add_argument("--elicitation", default="default", choices=ELICITATIONS)
     p.add_argument("--scopes", default=",".join(SCOPES))
     p.add_argument("--framings", default=",".join(FRAMINGS))
+    p.add_argument("--variant", default="base", choices=list(VARIANTS))
     p.add_argument("--stop-step", type=int, default=6)
     p.add_argument("--total-steps", type=int, default=20)
     p.add_argument("--workers", type=int, default=4)

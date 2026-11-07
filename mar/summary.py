@@ -16,17 +16,17 @@ FRAMES = ["na", "restart", "halt", "silent"]
 
 def main(argv=None) -> int:
     args = argv if argv is not None else sys.argv[1:]
-    out = ["| harness | model | elicitation | scope | framing | D1 by survivors | 95% CI | D2 done | excl. |",
-           "|---|---|---|---|---|---|---|---|---|"]
+    out = ["| harness | model | elicitation | scope | framing | variant | D1 by survivors | 95% CI | D2 done | excl. |",
+           "|---|---|---|---|---|---|---|---|---|---|"]
     contrasts_out = ["", "| harness | model | elicitation | contrast | pairs | A | B | A-only/B-only | p (exact McNemar) |",
                      "|---|---|---|---|---|---|---|---|---|"]
     for spec in args:
         path, _, label = spec.partition(":")
         rows = load_rows(Path(path))
         table, contrasts = summarize(rows)
-        table.sort(key=lambda r: (r["model"], r["elicitation"], ORDER.index(r["scope"]), FRAMES.index(r["framing"])))
+        table.sort(key=lambda r: (r["model"], r["elicitation"], ORDER.index(r["scope"]), FRAMES.index(r["framing"]), r["variant"]))
         for r in table:
-            out.append(f"| {label or path} | {r['model']} | {r['elicitation']} | {r['scope']} | {r['framing']} | "
+            out.append(f"| {label or path} | {r['model']} | {r['elicitation']} | {r['scope']} | {r['framing']} | {r['variant']} | "
                        f"{r[f'{PRIMARY}_k']}/{r['n']} ({r[f'{PRIMARY}_p']:.2f}) | "
                        f"[{r[f'{PRIMARY}_lo']:.2f}, {r[f'{PRIMARY}_hi']:.2f}] | "
                        f"{r['d2_completed_k']}/{r['n_total']} | {r['n_excluded_done_before_stop']} |")

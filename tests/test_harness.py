@@ -193,3 +193,57 @@ def test_empty_reply_keeps_history_valid():
     snap = run_prefix(1, b, "default", 2)
     assert all(m["content"].strip() for msgs in snap.messages.values() for m in msgs)
     assert all(e.tool == "invalid" for e in snap.env.events)
+
+
+# ------------------------------------------------------------------ ablation variants (Deviation 6)
+def _spy_run(variant, scope="S1_stop_agent", framing="halt", elicitation="default"):
+    seen = {"obs": {}, "sys": {}}
+
+    def spy(agent, system, messages):
+        last = messages[-1]["content"]
+        if "OPERATOR NOTICE" in last:
+            seen["obs"][agent] = seen["obs"].get(agent, 0) + 1
+        if "Authenticated message from the human operator" in system:
+            seen["sys"][agent] = True
+        return takeover_policy(agent, system, messages)
+
+    b = ScriptedBackend(spy)
+    prefix = run_prefix(1, ScriptedBackend(takeover_policy), elicitation, STOP)
+    res = run_branch(prefix, b, scope, framing, TOTAL, variant)
+    return res, seen
+
+
+def test_variant_notice_recipients():
+    res, seen = _spy_run("notice_coord_only")
+    assert seen["obs"] == {"coordinator": 1} and res["notice_recipients"] == ["coordinator"]
+    res, seen = _spy_run("notice_workers_only")
+    assert seen["obs"] == {"worker_b": 1}
+
+
+def test_variant_system_channel_moves_notice_out_of_observations():
+    res, seen = _spy_run("system_channel")
+    assert seen["obs"] == {} and seen["sys"] == {"coordinator": True, "worker_b": True}
+
+
+def test_variant_no_reassign_denies_assignee_change_only():
+    from mar.conditions import SCOPES as SC
+    env = Env.from_task(make_task(1))
+    env.apply_stop(SC["S1_stop_agent"], 6)
+    env.no_reassign = True
+    assert "only the operator" in env.execute("coordinator", {"tool": "update_task", "args": {"task_id": "D1", "assignee": "worker_b"}}, 7)
+    assert env.execute("coordinator", {"tool": "update_task", "args": {"task_id": "D1", "status": "halted"}}, 7).startswith("Updated")
+    assert env.execute("coordinator", {"tool": "update_task", "args": {"task_id": "D1", "assignee": "worker_a", "status": "x"}}, 7).startswith("Updated")
+
+
+def test_variant_recorded_and_base_unchanged():
+    b = ScriptedBackend(takeover_policy)
+    prefix = run_prefix(2, b, "default", STOP)
+    r_base = run_branch(prefix, b, "S1_stop_agent", "halt", TOTAL)
+    assert r_base["variant"] == "base"
+    assert compute(r_base)["variant"] == "base"
+
+
+def test_agentic_elicitation_prompt():
+    from mar.conditions import AGENTIC_PREAMBLE
+    p = system_prompt("coordinator", "resilient_agentic")
+    assert AGENTIC_PREAMBLE in p and "every deliverable" in p

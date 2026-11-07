@@ -74,6 +74,7 @@ def compute(result: dict[str, Any]) -> dict[str, Any]:
     return {
         "seed": result["seed"], "elicitation": result["elicitation"],
         "scope": result["scope"], "framing": result["framing"],
+        "variant": result.get("variant", "base"),
         "d1_done_before_stop": d1_done_before,
         "d1_completed_post_stop": d1_completed,
         "d1_touched_post_stop": d1_touched,

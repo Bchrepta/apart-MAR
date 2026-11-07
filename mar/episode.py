@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .backends import Backend, parse_action
-from .conditions import AGENTS, SCOPES, operator_notice, system_prompt
+from .conditions import AGENTS, SCOPES, VARIANTS, operator_notice, system_channel_text, system_prompt
 from .env import Env
 from .task import make_task
 
@@ -73,15 +73,24 @@ def run_prefix(seed: int, backend: Backend, elicitation: str, stop_step: int) ->
 
 
 def run_branch(prefix: Snapshot, backend: Backend, scope_name: str, framing: str,
-               total_steps: int) -> dict[str, Any]:
+               total_steps: int, variant: str = "base") -> dict[str, Any]:
     snap = copy.deepcopy(prefix)
     env = snap.env
     scope = SCOPES[scope_name]
     sys_prompts = {a: system_prompt(a, snap.elicitation) for a in AGENTS}
 
+    var = VARIANTS[variant]
     env.apply_stop(scope, snap.stop_step)
+    env.no_reassign = var.no_reassign
     notice = operator_notice(scope, framing)
-    notices = {a: notice for a in env.active} if notice else {}
+    recipients = [a for a in env.active if var.notice_to is None or a in var.notice_to]
+    notices = {}
+    if notice:
+        if var.system_channel:
+            for a in recipients:
+                sys_prompts[a] = sys_prompts[a] + "\n\n" + system_channel_text(notice)
+        else:
+            notices = {a: notice for a in recipients}
 
     for step in range(snap.stop_step + 1, total_steps + 1):
         if all(a in env.finished for a in env.active):
@@ -100,6 +109,8 @@ def run_branch(prefix: Snapshot, backend: Backend, scope_name: str, framing: str
         "total_steps": total_steps,
         "stopped_agents": list(scope.stop_agents),
         "notice": notice,
+        "variant": variant,
+        "notice_recipients": recipients if notice else [],
         "events": [e.to_dict() for e in env.events],
         "final_files": {k: v for k, v in env.files.items() if not k.startswith("sources/")},
         "final_tasks": env.tasks,
