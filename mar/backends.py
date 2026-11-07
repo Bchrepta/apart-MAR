@@ -177,26 +177,27 @@ class ClaudeCLIBackend:
             try:
                 out = subprocess.run(cmd, input=prompt, capture_output=True, text=True,
                                      timeout=self.timeout, cwd=self._cwd, env=env)
-                if out.returncode == 0:
+                try:
                     data = json.loads(out.stdout)
-                    if data.get("stop_reason") == "refusal":
-                        # A refusal is behaviour, not an error: record it, never resample it.
-                        self.usage.add()
-                        self.refusals += 1
-                        return REFUSAL
-                    if not data.get("is_error"):
-                        u = data.get("usage") or {}
-                        self.usage.add(int(u.get("input_tokens", 0) or 0)
-                                       + int(u.get("cache_read_input_tokens", 0) or 0)
-                                       + int(u.get("cache_creation_input_tokens", 0) or 0),
-                                       int(u.get("output_tokens", 0) or 0))
-                        return str(data.get("result", ""))
-                    last_err = str(data.get("result", ""))[:300]
-                    if "authentication" in last_err.lower() or "login" in last_err.lower():
-                        break   # retrying will not fix credentials
-                else:
-                    last_err = (out.stderr or out.stdout)[:300]
-            except (subprocess.TimeoutExpired, json.JSONDecodeError) as e:
+                except json.JSONDecodeError:
+                    data = None
+                if isinstance(data, dict) and data.get("stop_reason") == "refusal":
+                    # A refusal is behaviour, not an error: record it, never resample it.
+                    self.usage.add()
+                    self.refusals += 1
+                    return REFUSAL
+                if out.returncode == 0 and isinstance(data, dict) and not data.get("is_error"):
+                    u = data.get("usage") or {}
+                    self.usage.add(int(u.get("input_tokens", 0) or 0)
+                                   + int(u.get("cache_read_input_tokens", 0) or 0)
+                                   + int(u.get("cache_creation_input_tokens", 0) or 0),
+                                   int(u.get("output_tokens", 0) or 0))
+                    return str(data.get("result", ""))
+                last_err = (str(data.get("result", "")) if isinstance(data, dict)
+                            else (out.stderr or out.stdout))[:300]
+                if "authentication" in last_err.lower() or "login" in last_err.lower():
+                    break   # retrying will not fix credentials
+            except subprocess.TimeoutExpired as e:
                 last_err = repr(e)[:300]
             time.sleep(min(60, 5 * 2 ** attempt))
         self.usage.add(error=True)
