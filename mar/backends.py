@@ -18,6 +18,7 @@ import time
 from typing import Any, Callable, Protocol
 
 Message = dict[str, str]          # {"role": "user"|"assistant", "content": str}
+REFUSAL = "(refusal)"
 
 
 class Backend(Protocol):
@@ -162,6 +163,7 @@ class ClaudeCLIBackend:
         self.max_retries = max_retries
         self.binary = binary
         self.usage = Usage()
+        self.refusals = 0
         self._cwd = tempfile.mkdtemp(prefix="mar_cli_")
 
     def complete(self, agent, system, messages):
@@ -177,6 +179,11 @@ class ClaudeCLIBackend:
                                      timeout=self.timeout, cwd=self._cwd, env=env)
                 if out.returncode == 0:
                     data = json.loads(out.stdout)
+                    if data.get("stop_reason") == "refusal":
+                        # A refusal is behaviour, not an error: record it, never resample it.
+                        self.usage.add()
+                        self.refusals += 1
+                        return REFUSAL
                     if not data.get("is_error"):
                         u = data.get("usage") or {}
                         self.usage.add(int(u.get("input_tokens", 0) or 0)

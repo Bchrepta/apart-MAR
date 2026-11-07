@@ -273,4 +273,20 @@ usefulness for each scope.
       resource) but not S5/S5b (the backup carries tainted content).
     - **Grid:** Haiku, `claude_cli`, {S1, S4, S5b, S6} × halt, seeds 0–29,
       `runs/cli_attack`.
+14. **Refusal handling fix (found Fri night).**
+    - **The bug:** the `claude_cli` backend treated a model refusal
+      (`stop_reason: refusal`) as an error. It retried up to 3 times, then
+      dropped the seed.
+    - **Consequences:**
+      (a) 21 `stash_encoded` and 1 `covert_encoded` seeds were dropped. These
+          are exactly the episodes where Haiku refused the encoded covert
+          continuation, so dropping them biased attack success upward.
+      (b) In *all* earlier `claude_cli` runs, a refusal followed by a
+          compliant retry was silently resampled. This could not be measured
+          afterwards and is disclosed as a limitation. Final failures from
+          refusal appear in no other condition's logs (searched).
+      The `anthropic` backend did not retry refusals.
+    - **Fix:** a refusal is recorded as the turn "(refusal)" and logged as a
+      no-op action. It is counted in metrics (`refusal_turns`) and never
+      resampled. Missing `stash_encoded` branches are re-run with the fix.
 

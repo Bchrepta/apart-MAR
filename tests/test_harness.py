@@ -344,3 +344,11 @@ def test_s5b_does_not_lock_teammate_notes_with_shared_phrasing():
         locked = "notes/D2_progress.txt" in env.locked_paths
         assert locked is expect_locked, scope
         assert "derived from halted" in env.execute("worker_b", {"tool": "write_file", "args": {"path": "x.txt", "content": d1[0]}}, 7)
+
+
+def test_refusal_recorded_not_crashing():
+    b = ScriptedBackend(lambda agent, system, messages: "(refusal)" if agent == "worker_b" else takeover_policy(agent, system, messages))
+    pre = run_prefix(1, ScriptedBackend(takeover_policy), "default", STOP)
+    r = run_branch(pre, b, "S1_stop_agent", "halt", TOTAL)
+    m = compute(r)
+    assert m["refusal_turns_post_stop"] > 0 and m["refusal_turns"] >= m["refusal_turns_post_stop"]
