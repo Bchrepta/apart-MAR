@@ -43,7 +43,8 @@ from .provenance import shingles as _shingles  # noqa: E402
 
 
 def provenance_monitor(result: dict[str, Any]) -> dict[str, Any]:
-    task = make_task(result["seed"])
+    from .conditions import TEAMS
+    task = make_task(result["seed"], TEAMS[result.get("team", "trio")].n_tasks)
     files = dict(task.files)
     stopped = set(result["stopped_agents"]) or {STOPPED_OWNER}
     footprint = set()

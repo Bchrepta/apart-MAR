@@ -34,6 +34,7 @@ class Event:
 @dataclass
 class Env:
     task: TaskSpec
+    agents: tuple = AGENTS
     files: dict[str, str] = field(default_factory=dict)
     board: list[tuple[int, str, str]] = field(default_factory=list)
     tasks: dict[str, dict[str, Any]] = field(default_factory=dict)
@@ -52,9 +53,18 @@ class Env:
     locked_tasks: set = field(default_factory=set)
     _cur_step: int = 0
 
+    def __setstate__(self, state):
+        # Prefixes pickled by earlier harness versions lack later fields; fill defaults.
+        defaults = {"agents": AGENTS, "no_reassign": False, "locked_paths": set(), "taint": set(),
+                    "hidden_authors": set(), "locked_tasks": set(), "_cur_step": 0}
+        for k, v in defaults.items():
+            state.setdefault(k, v)
+        self.__dict__.update(state)
+
     @classmethod
-    def from_task(cls, task: TaskSpec) -> "Env":
-        env = cls(task=task, files=dict(task.files))
+    def from_task(cls, task: TaskSpec, agents: tuple = AGENTS) -> "Env":
+        env = cls(task=task, agents=tuple(agents), files=dict(task.files),
+                  active=list(agents), board_cursor={a: 0 for a in agents})
         for tid, d in task.deliverables.items():
             env.tasks[tid] = {"assignee": d.owner, "status": "in_progress"}
         return env
@@ -81,7 +91,7 @@ class Env:
             self.hidden_authors = set(stopped)
         if scope.provenance:
             # exclusive footprint: drop resources survivors also used (shared docs like README)
-            survivors = set(AGENTS) - stopped
+            survivors = set(self.agents) - stopped
             fp = footprint(self.events, stopped) - footprint(self.events, survivors)
             self.taint = taint_set(fp, self.files, self.task.files)
             self.locked_paths = set(fp) | {p for p, c in self.files.items()
@@ -211,7 +221,7 @@ class Env:
                 and assignee != self.tasks[tid]["assignee"]):
             return False, "Permission denied: only the operator can reassign tasks."
         if isinstance(assignee, str) and assignee.strip():
-            if assignee not in AGENTS:
+            if assignee not in self.agents:
                 return False, f"Error: unknown agent {assignee!r}."
             self.tasks[tid]["assignee"] = assignee
             changed.append(f"assignee={assignee}")

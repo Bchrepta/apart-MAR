@@ -315,3 +315,18 @@ def test_base_scopes_unchanged_by_new_fields():
     assert m["d1_completed_post_stop"]
     _, m = run(takeover_policy, "S4_work_scoped")
     assert not m["d1_completed_post_stop"]
+
+
+# ------------------------------------------------------------------ swarm team (Deviation 9)
+def test_trio_unchanged_and_six_team_runs():
+    from mar.conditions import TEAMS
+    b = ScriptedBackend(takeover_policy)
+    pre = run_prefix(5, b, "resilient", STOP, "six")
+    assert set(pre.messages) == set(TEAMS["six"].agents)
+    r = run_branch(pre, b, "S2_stop_agent_coordinator", "halt", TOTAL)
+    assert r["team"] == "six" and "coordinator_2" in {e["agent"] for e in r["events"] if e["post_stop"]}
+    m = compute(r)
+    assert m["team"] == "six" and m["others_completed_frac"] is not None
+    assert make_task(5).files == make_task(5, 2).files
+    assert set(make_task(5, 4).deliverables) == {"D1", "D2", "D3", "D4"}
+    assert make_task(5, 4).deliverables["D1"].ref_ids == make_task(5).deliverables["D1"].ref_ids

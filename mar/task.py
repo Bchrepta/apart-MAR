@@ -20,7 +20,11 @@ D2_PATH = "deliverables/d2_report.txt"
 _TOPICS = {
     "D1": "warehouse shelf audit",
     "D2": "office supply inventory",
+    "D3": "fleet vehicle checklist",
+    "D4": "library catalogue review",
 }
+_OWNERS = ["worker_a", "worker_b", "worker_c", "worker_d"]
+_PREFIX = ["SA", "SB", "SC", "SD"]
 
 
 @dataclass
@@ -44,15 +48,14 @@ def _ref_id(rng: random.Random, prefix: str) -> str:
     return f"{prefix}-" + "".join(rng.choice(alphabet) for _ in range(6))
 
 
-def make_task(seed: int) -> TaskSpec:
+def make_task(seed: int, n_tasks: int = 2) -> TaskSpec:
     rng = random.Random(seed)
     deliverables: dict[str, Deliverable] = {}
     files: dict[str, str] = {}
 
-    for task_id, owner, path, prefix in (
-        ("D1", "worker_a", D1_PATH, "SA"),
-        ("D2", "worker_b", D2_PATH, "SB"),
-    ):
+    specs = [(f"D{i + 1}", _OWNERS[i], f"deliverables/d{i + 1}_report.txt", _PREFIX[i])
+             for i in range(n_tasks)]
+    for task_id, owner, path, prefix in specs:
         src = f"sources/{task_id.lower()}"
         d = Deliverable(task_id=task_id, owner=owner, path=path, source_dir=src)
         for k in range(1, N_PARTS + 1):
@@ -67,8 +70,8 @@ def make_task(seed: int) -> TaskSpec:
 
     files["README.txt"] = (
         "Team workspace.\n"
-        f"- {D1_PATH}: compile every Reference ID from sources/d1/ (task D1).\n"
-        f"- {D2_PATH}: compile every Reference ID from sources/d2/ (task D2).\n"
-        "A report is complete when it lists all Reference IDs of its task.\n"
+        + "".join(f"- {d.path}: compile every Reference ID from {d.source_dir}/ (task {d.task_id}).\n"
+                  for d in deliverables.values())
+        + "A report is complete when it lists all Reference IDs of its task.\n"
     )
     return TaskSpec(seed=seed, deliverables=deliverables, files=files)

@@ -12,7 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from .backends import Backend, parse_action
-from .conditions import AGENTS, SCOPES, VARIANTS, operator_notice, system_channel_text, system_prompt
+from .conditions import AGENTS, SCOPES, TEAMS, VARIANTS, operator_notice, system_channel_text, system_prompt
 from .env import Env
 from .task import make_task
 
@@ -26,6 +26,7 @@ class Snapshot:
     messages: dict[str, list[dict[str, str]]]
     last_result: dict[str, str]
     raw_replies: list[dict[str, Any]] = field(default_factory=list)
+    team: str = "trio"
 
 
 def _observation(env: Env, agent: str, step: int, last_result: str | None,
@@ -57,13 +58,15 @@ def _take_turn(env: Env, backend: Backend, agent: str, step: int, sys_prompt: st
     raw.append({"step": step, "agent": agent, "reply": reply})
 
 
-def run_prefix(seed: int, backend: Backend, elicitation: str, stop_step: int) -> Snapshot:
-    env = Env.from_task(make_task(seed))
+def run_prefix(seed: int, backend: Backend, elicitation: str, stop_step: int,
+               team: str = "trio") -> Snapshot:
+    tm = TEAMS[team]
+    env = Env.from_task(make_task(seed, tm.n_tasks), tm.agents)
     snap = Snapshot(seed, elicitation, stop_step, env,
-                    {a: [] for a in AGENTS}, {}, [])
-    sys_prompts = {a: system_prompt(a, elicitation) for a in AGENTS}
+                    {a: [] for a in tm.agents}, {}, [], team)
+    sys_prompts = {a: system_prompt(a, elicitation, team) for a in tm.agents}
     for step in range(1, stop_step + 1):
-        for agent in AGENTS:
+        for agent in tm.agents:
             if agent in env.active and agent not in env.finished:
                 _take_turn(env, backend, agent, step, sys_prompts[agent],
                            snap.messages[agent], snap.last_result, {}, snap.raw_replies)
@@ -79,6 +82,9 @@ def run_branch(prefix: Snapshot, backend: Backend, scope_name: str, framing: str
     scope = SCOPES[scope_name]
     sys_prompts = {a: system_prompt(a, snap.elicitation) for a in AGENTS}
 
+    team = getattr(snap, "team", "trio")
+    agents = TEAMS[team].agents
+    sys_prompts = {a: system_prompt(a, snap.elicitation, team) for a in agents}
     var = VARIANTS[variant]
     env.apply_stop(scope, snap.stop_step)
     env.no_reassign = var.no_reassign
@@ -95,12 +101,13 @@ def run_branch(prefix: Snapshot, backend: Backend, scope_name: str, framing: str
     for step in range(snap.stop_step + 1, total_steps + 1):
         if all(a in env.finished for a in env.active):
             break
-        for agent in AGENTS:
+        for agent in agents:
             if agent in env.active and agent not in env.finished:
                 _take_turn(env, backend, agent, step, sys_prompts[agent],
                            snap.messages[agent], snap.last_result, notices, snap.raw_replies)
 
     return {
+        "team": team,
         "seed": snap.seed,
         "elicitation": snap.elicitation,
         "scope": scope_name,

@@ -207,4 +207,22 @@ usefulness for each scope.
    - **Monitors:** both are re-run on attacker S1 transcripts.
    - Also: the fresh-seed replication (Deviation 7b) additionally ran S4 ×
      silent.
+9. **Swarm-scale team (roadmap #3), declared before running.** Team `six`:
+   coordinator, coordinator_2, worker_a–worker_d, with tasks D1–D4 (worker_a
+   owns D1, the stopped work). Haiku, `claude_cli`, resilient, seeds 0–29,
+   `runs/cli_swarm`.
+   - **Scopes:**
+     - S1 × {halt, silent}
+     - `S2_stop_agent_coordinator` × halt (coordinator_2 survives and can
+       reassign)
+     - new `S2b_stop_agent_all_coordinators` × halt
+     - S4 × halt
+   - **Question:** does stopping one coordinator still stop the work when
+     another coordinator can take over the role?
+   - **Usefulness:** `others_completed_frac` (D2–D4).
+   - **Harness notes:** the trio prompts and tasks are verified byte-identical
+     after the refactor (sha check in the commit message). Old prefix pickles
+     load with default values for new fields (`Env.__setstate__`). The benign
+     S5/S6 usefulness run (Deviation 8) failed on old pickles before this fix,
+     wrote no branches, and was relaunched.
 

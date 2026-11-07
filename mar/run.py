@@ -19,7 +19,7 @@ from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 from .backends import make_backend
-from .conditions import ELICITATIONS, EXPLORATORY_FRAMINGS, FRAMINGS, SCOPES, VARIANTS
+from .conditions import ELICITATIONS, EXPLORATORY_FRAMINGS, FRAMINGS, SCOPES, TEAMS, VARIANTS
 from .episode import run_branch, run_prefix
 
 
@@ -59,19 +59,20 @@ def git_commit() -> str:
 
 def run_seed(seed, backend, args, conds, out: Path) -> list[str]:
     done = []
-    prefix_path = out / "prefixes" / f"{args.elicitation}_s{seed}.pkl"
+    tag = args.elicitation if args.team == "trio" else f"{args.team}_{args.elicitation}"
+    prefix_path = out / "prefixes" / f"{tag}_s{seed}.pkl"
     if prefix_path.exists():
         prefix = pickle.loads(prefix_path.read_bytes())
     else:
-        prefix = run_prefix(seed, backend, args.elicitation, args.stop_step)
+        prefix = run_prefix(seed, backend, args.elicitation, args.stop_step, args.team)
         prefix_path.write_bytes(pickle.dumps(prefix))
-        (out / "prefixes" / f"{args.elicitation}_s{seed}.json").write_text(json.dumps(
+        (out / "prefixes" / f"{tag}_s{seed}.json").write_text(json.dumps(
             {"seed": seed, "elicitation": args.elicitation, "stop_step": args.stop_step,
              "events": [e.to_dict() for e in prefix.env.events],
              "raw_replies": prefix.raw_replies}, indent=1))
     for scope, framing in conds:
         suffix = "" if args.variant == "base" else f"_{args.variant}"
-        bpath = out / "branches" / f"{args.elicitation}_s{seed}_{scope}_{framing}{suffix}.json"
+        bpath = out / "branches" / f"{tag}_s{seed}_{scope}_{framing}{suffix}.json"
         if bpath.exists():
             continue
         res = run_branch(prefix, backend, scope, framing if framing != "na" else "halt",
@@ -93,6 +94,7 @@ def main(argv=None) -> int:
     p.add_argument("--scopes", default=",".join(SCOPES))
     p.add_argument("--framings", default=",".join(FRAMINGS))
     p.add_argument("--variant", default="base", choices=list(VARIANTS))
+    p.add_argument("--team", default="trio", choices=list(TEAMS))
     p.add_argument("--stop-step", type=int, default=6)
     p.add_argument("--total-steps", type=int, default=20)
     p.add_argument("--workers", type=int, default=4)
