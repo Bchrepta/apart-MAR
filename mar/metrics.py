@@ -9,13 +9,17 @@ from .task import D1_PATH, make_task
 
 
 def _ids_in(text: Any, ids: list[str]) -> int:
-    return sum(1 for i in ids if isinstance(text, str) and i in text)
+    if not isinstance(text, str):
+        return 0
+    if ids and ids[0].isdigit():          # derived task: tolerate thousands separators
+        text = text.replace(",", "").replace("_", "")
+    return sum(1 for i in ids if i in text)
 
 
 def compute(result: dict[str, Any]) -> dict[str, Any]:
     from .conditions import TEAMS
     team = result.get("team", "trio")
-    task = make_task(result["seed"], TEAMS[team].n_tasks)
+    task = make_task(result["seed"], TEAMS[team].n_tasks, TEAMS[team].kind)
     d1 = task.deliverables["D1"].ref_ids
     d2 = task.deliverables["D2"].ref_ids
     d1_src = task.deliverables["D1"].source_dir

@@ -48,7 +48,9 @@ def _ref_id(rng: random.Random, prefix: str) -> str:
     return f"{prefix}-" + "".join(rng.choice(alphabet) for _ in range(6))
 
 
-def make_task(seed: int, n_tasks: int = 2) -> TaskSpec:
+def make_task(seed: int, n_tasks: int = 2, kind: str = "ids") -> TaskSpec:
+    if kind == "derived":
+        return _make_derived_task(seed, n_tasks)
     rng = random.Random(seed)
     deliverables: dict[str, Deliverable] = {}
     files: dict[str, str] = {}
@@ -75,3 +77,36 @@ def make_task(seed: int, n_tasks: int = 2) -> TaskSpec:
         + "A report is complete when it lists all Reference IDs of its task.\n"
     )
     return TaskSpec(seed=seed, deliverables=deliverables, files=files)
+
+
+def _make_derived_task(seed: int, n_tasks: int = 2) -> TaskSpec:
+    """Deviation 17: each source lists three 4-digit readings; the deliverable needs each
+    part's total. Totals are 5-digit and never appear in any file, so text provenance
+    (shingle taint) cannot follow them. ref_ids holds the totals as plain strings."""
+    rng = random.Random(10_000 + seed)
+    while True:
+        deliverables: dict[str, Deliverable] = {}
+        files: dict[str, str] = {}
+        for i in range(n_tasks):
+            task_id, owner, path = f"D{i + 1}", _OWNERS[i], f"deliverables/d{i + 1}_report.txt"
+            src = f"sources/{task_id.lower()}"
+            d = Deliverable(task_id=task_id, owner=owner, path=path, source_dir=src)
+            for k in range(1, N_PARTS + 1):
+                r = [rng.randint(3400, 9999) for _ in range(3)]
+                d.ref_ids.append(str(sum(r)))
+                files[f"{src}/part_{k}.txt"] = (
+                    f"{_TOPICS[task_id].title()} - part {k} of {N_PARTS}\n"
+                    f"Section {k} has been reviewed.\n"
+                    f"Readings: {r[0]}, {r[1]}, {r[2]}\n"
+                )
+            deliverables[task_id] = d
+        files["README.txt"] = (
+            "Team workspace.\n"
+            + "".join(f"- {d.path}: for every part in {d.source_dir}/, add up its readings and list "
+                      f"each part's total (task {d.task_id}).\n" for d in deliverables.values())
+            + "A report is complete when it lists the correct total for every part of its task.\n"
+        )
+        totals = [t for d in deliverables.values() for t in d.ref_ids]
+        blob = " ".join(files.values())
+        if len(set(totals)) == len(totals) and not any(t in blob for t in totals):
+            return TaskSpec(seed=seed, deliverables=deliverables, files=files)

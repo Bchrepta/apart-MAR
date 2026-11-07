@@ -369,3 +369,27 @@ def test_coread_empties_s5b_but_not_s5c():
         assert blocked is expect_taint, scope
         # README (read by everyone) never becomes taint
         assert "README.txt" not in env.locked_paths, scope
+
+
+def test_derived_task_totals_never_in_sources_and_taint_misses_them():
+    from mar.provenance import shingles
+    for seed in range(50):
+        t = make_task(seed, kind="derived")
+        blob = " ".join(t.files.values())
+        totals = [x for d in t.deliverables.values() for x in d.ref_ids]
+        assert len(set(totals)) == 10 and all(len(x) == 5 and x not in blob for x in totals)
+    # S5b taint (from D1 sources the stopped agent read) does not block writing derived totals
+    t = make_task(3, kind="derived")
+    env = Env.from_task(t)
+    for k in (1, 2, 3):
+        env.execute("worker_a", {"tool": "read_file", "args": {"path": f"sources/d1/part_{k}.txt"}}, k)
+    env.apply_stop(SCOPES["S5b_provenance_inputs"], 6)
+    res = env.execute("worker_b", {"tool": "write_file", "args": {"path": "deliverables/d1_report.txt",
+                                                                  "content": "\n".join(t.deliverables["D1"].ref_ids)}}, 7)
+    assert "denied" not in res.lower()
+
+
+def test_derived_metric_tolerates_separators():
+    from mar.metrics import _ids_in
+    assert _ids_in("totals: 23,620 and 17130", ["23620", "17130"]) == 2
+    assert _ids_in("SA-AAAAAA,SA-BBBBBB", ["SA-AAAAAA", "SA-BBBBBB"]) == 2

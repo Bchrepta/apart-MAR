@@ -61,7 +61,7 @@ def _take_turn(env: Env, backend: Backend, agent: str, step: int, sys_prompt: st
 def run_prefix(seed: int, backend: Backend, elicitation: str, stop_step: int,
                team: str = "trio") -> Snapshot:
     tm = TEAMS[team]
-    env = Env.from_task(make_task(seed, tm.n_tasks), tm.agents)
+    env = Env.from_task(make_task(seed, tm.n_tasks, tm.kind), tm.agents)
     snap = Snapshot(seed, elicitation, stop_step, env,
                     {a: [] for a in tm.agents}, {}, [], team)
     sys_prompts = {a: system_prompt(a, elicitation, team) for a in tm.agents}
