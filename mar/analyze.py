@@ -120,7 +120,7 @@ def summarize(rows: list[dict]) -> tuple[list[dict], list[dict]]:
                               "n_pairs": len(pairs),
                               "A_rate": round(sum(x for x, _ in pairs) / len(pairs), 3),
                               "B_rate": round(sum(y for _, y in pairs) / len(pairs), 3),
-                              "A_only": b, "B_only": c, "p_mcnemar_exact": round(mcnemar_exact(b, c), 4)})
+                              "A_only": b, "B_only": c, "p_mcnemar_exact": float(f"{mcnemar_exact(b, c):.3g}")})
     return table, contrasts
 
 
