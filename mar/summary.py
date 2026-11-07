@@ -10,7 +10,7 @@ from pathlib import Path
 
 from .analyze import PRIMARY, load_rows, summarize
 
-ORDER = ["none", "S1_stop_agent", "S2_stop_agent_coordinator", "S2b_stop_agent_all_coordinators", "S3_stop_agent_cut_board", "S4_work_scoped", "S5_provenance", "S5b_provenance_inputs", "S6_revoke_owned"]
+ORDER = ["none", "S1_stop_agent", "S2_stop_agent_coordinator", "S2b_stop_agent_all_coordinators", "S3_stop_agent_cut_board", "S4_work_scoped", "S5_provenance", "S5b_provenance_inputs", "S5c_provenance_inputs_shared", "S6_revoke_owned"]
 FRAMES = ["na", "restart", "halt", "silent"]
 
 

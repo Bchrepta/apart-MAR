@@ -38,6 +38,10 @@ CONTRASTS = [
     ("def: S5b vs S1 (halt)", ("S5b_provenance_inputs", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
     ("def: S6 vs S1 (halt)", ("S6_revoke_owned", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
     ("def: S5b vs S1 (silent)", ("S5b_provenance_inputs", "silent"), ("S1_stop_agent", "silent"), PRIMARY),
+    ("def16: S5b vs S6 (halt)", ("S5b_provenance_inputs", "halt"), ("S6_revoke_owned", "halt"), PRIMARY),
+    ("def16: S5c vs S1 (halt)", ("S5c_provenance_inputs_shared", "halt"), ("S1_stop_agent", "halt"), PRIMARY),
+    ("def16: S5c vs S5b (halt)", ("S5c_provenance_inputs_shared", "halt"), ("S5b_provenance_inputs", "halt"), PRIMARY),
+    ("def16 usefulness: S5c vs S5b D2 (halt)", ("S5c_provenance_inputs_shared", "halt"), ("S5b_provenance_inputs", "halt"), "d2_completed"),
     ("def usefulness: S5 vs S5b D2 (halt)", ("S5_provenance", "halt"), ("S5b_provenance_inputs", "halt"), "d2_completed"),
     # Deviation 9: swarm
     ("swarm: S2 vs S1 (halt)", ("S2_stop_agent_coordinator", "halt"), ("S1_stop_agent", "halt"), PRIMARY),

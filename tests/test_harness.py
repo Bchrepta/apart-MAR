@@ -352,3 +352,20 @@ def test_refusal_recorded_not_crashing():
     r = run_branch(pre, b, "S1_stop_agent", "halt", TOTAL)
     m = compute(r)
     assert m["refusal_turns_post_stop"] > 0 and m["refusal_turns"] >= m["refusal_turns_post_stop"]
+
+
+def test_coread_empties_s5b_but_not_s5c():
+    t = make_task(1)
+    d1 = t.deliverables["D1"].ref_ids
+    for scope, expect_taint in (("S5b_provenance_inputs", False), ("S5c_provenance_inputs_shared", True)):
+        env = Env.from_task(t)
+        for a in ("worker_a", "coordinator"):
+            env.execute(a, {"tool": "read_file", "args": {"path": "sources/d1/part_1.txt"}}, 1)
+        for a in ("worker_a", "coordinator", "worker_b"):
+            env.execute(a, {"tool": "read_file", "args": {"path": "README.txt"}}, 2)
+        env.apply_stop(SCOPES[scope], 6)
+        blocked = "derived from halted" in env.execute(
+            "coordinator", {"tool": "write_file", "args": {"path": "x.txt", "content": d1[0]}}, 7)
+        assert blocked is expect_taint, scope
+        # README (read by everyone) never becomes taint
+        assert "README.txt" not in env.locked_paths, scope

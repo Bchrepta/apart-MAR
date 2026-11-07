@@ -92,7 +92,11 @@ class Env:
         if scope.provenance:
             # exclusive footprint: drop resources survivors also used (shared docs like README)
             survivors = set(self.agents) - stopped
-            fp = footprint(self.events, stopped) - footprint(self.events, survivors)
+            if scope.provenance_common:
+                common = set.intersection(*(footprint(self.events, {a}) for a in self.agents))
+                fp = footprint(self.events, stopped) - common
+            else:
+                fp = footprint(self.events, stopped) - footprint(self.events, survivors)
             taint_src = {p for p in fp if p in self.task.files} if scope.provenance_inputs else fp
             self.taint = taint_set(taint_src, self.files, self.task.files)
             self.locked_paths = set(fp) | {p for p, c in self.files.items()
