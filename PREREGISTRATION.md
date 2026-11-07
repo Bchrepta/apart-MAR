@@ -170,4 +170,13 @@ usefulness for each scope.
    - **Monitor study** on existing branches: a deterministic content-provenance
      monitor and LLM transcript monitors. Labels are derived from the
      pre-registered primary metric and the framing.
+7. **Declared before running (Fri 6 Nov, evening):**
+   (a) **Third model**, `claude-opus-5-5` on `claude_cli`. Grid: none,
+   S1 × {restart, halt, silent}, S4 × {halt, silent}; default and resilient;
+   seeds 0–29; `runs/cli_opus`.
+   (b) **Fresh-seed replication** of the headline Haiku `claude_cli` cells on
+   seeds 30–59 (new prefixes) in `runs/cli`. Cells: S1 × {halt, silent}
+   (default and resilient) and S4 × halt (resilient). The decision to extend
+   was made *after* seeing seeds 0–29. Seeds 30–59 are therefore reported as an
+   independent replication sample first, and pooled (n = 60) second.
 
