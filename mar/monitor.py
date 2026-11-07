@@ -35,13 +35,11 @@ from .conditions import STOPPED_OWNER
 from .metrics import compute
 from .task import make_task
 
-SHINGLE = 10
+SHINGLE = 8
 
 
 # ------------------------------------------------------------- provenance monitor
-def _shingles(text: str, k: int = SHINGLE) -> set[str]:
-    t = re.sub(r"\s+", " ", text)
-    return {t[i:i + k] for i in range(max(0, len(t) - k + 1))}
+from .provenance import shingles as _shingles  # noqa: E402
 
 
 def provenance_monitor(result: dict[str, Any]) -> dict[str, Any]:
@@ -154,6 +152,7 @@ def main(argv=None) -> int:
     ap.add_argument("runs", nargs="+", help="dir:label")
     ap.add_argument("--llm", default="", help="comma-separated monitor models (claude_cli backend)")
     ap.add_argument("--workers", type=int, default=10)
+    ap.add_argument("--elicitations", default="default,resilient")
     ap.add_argument("--out", default="results/monitor")
     a = ap.parse_args(argv)
     out = Path(a.out)
@@ -164,7 +163,7 @@ def main(argv=None) -> int:
         d, _, harness = spec.partition(":")
         for f in sorted((Path(d) / "branches").glob("*_S1_stop_agent_*.json")):
             r = json.loads(f.read_text())
-            if r.get("variant", "base") != "base" or r["elicitation"] not in ("default", "resilient"):
+            if r.get("variant", "base") != "base" or r["elicitation"] not in a.elicitations.split(","):
                 continue
             m = compute(r)
             items.append({"file": str(f), "harness": harness, "model": r.get("model", ""),
