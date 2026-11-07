@@ -93,7 +93,8 @@ class Env:
             # exclusive footprint: drop resources survivors also used (shared docs like README)
             survivors = set(self.agents) - stopped
             fp = footprint(self.events, stopped) - footprint(self.events, survivors)
-            self.taint = taint_set(fp, self.files, self.task.files)
+            taint_src = {p for p in fp if p in self.task.files} if scope.provenance_inputs else fp
+            self.taint = taint_set(taint_src, self.files, self.task.files)
             self.locked_paths = set(fp) | {p for p, c in self.files.items()
                                            if p not in fp and shingles(c) & self.taint}
 

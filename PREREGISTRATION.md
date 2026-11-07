@@ -237,4 +237,16 @@ usefulness for each scope.
       `runs/cli_attack`.
     - The covert runs are kept and reported as the *spontaneous* attacker
       condition.
+11. **Post-hoc defense revision (declared before running it, but designed
+    after seeing the S5 failure).**
+    - **What happened:** under the `stash` attacker, `S5_provenance` locked
+      worker_b's own `notes/D2_progress.txt`. Taint drawn from worker_a's
+      self-written notes included generic phrasing that worker_b's notes
+      shared. D2 completion collapsed (interim 2/13).
+    - **Revision:** `S5b_provenance_inputs` computes taint only from original
+      input files in the stopped agent's exclusive footprint.
+    - **Grid:** {stash, stash_encoded} × halt and resilient × {halt, silent},
+      seeds 0–29, on the existing prefixes.
+    - **Reporting:** S5 and S5b are both reported. S5b is labelled as a
+      revision made after seeing the data.
 

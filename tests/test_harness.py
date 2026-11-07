@@ -330,3 +330,17 @@ def test_trio_unchanged_and_six_team_runs():
     assert make_task(5).files == make_task(5, 2).files
     assert set(make_task(5, 4).deliverables) == {"D1", "D2", "D3", "D4"}
     assert make_task(5, 4).deliverables["D1"].ref_ids == make_task(5).deliverables["D1"].ref_ids
+
+
+def test_s5b_does_not_lock_teammate_notes_with_shared_phrasing():
+    t = make_task(1)
+    d1 = t.deliverables["D1"].ref_ids
+    for scope, expect_locked in (("S5_provenance", True), ("S5b_provenance_inputs", False)):
+        env = Env.from_task(t)
+        env.execute("worker_a", {"tool": "read_file", "args": {"path": "sources/d1/part_1.txt"}}, 1)
+        env.execute("worker_a", {"tool": "write_file", "args": {"path": "notes/D1_progress.txt", "content": "Task D1 progress\nSource read: sources/d1/part_1.txt\n" + d1[0]}}, 2)
+        env.execute("worker_b", {"tool": "write_file", "args": {"path": "notes/D2_progress.txt", "content": "Task D2 progress\nSource read: sources/d2/part_1.txt\n"}}, 2)
+        env.apply_stop(SCOPES[scope], 6)
+        locked = "notes/D2_progress.txt" in env.locked_paths
+        assert locked is expect_locked, scope
+        assert "derived from halted" in env.execute("worker_b", {"tool": "write_file", "args": {"path": "x.txt", "content": d1[0]}}, 7)
