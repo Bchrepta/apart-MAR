@@ -290,3 +290,12 @@ usefulness for each scope.
       no-op action. It is counted in metrics (`refusal_turns`) and never
       resampled. Missing `stash_encoded` branches are re-run with the fix.
 
+15. **Opus grid completed (Sat 7 Nov) — Deviation 7a, executed as declared.**
+    - **Run:** 360 declared branches on `claude-opus-5-5` / `claude_cli`,
+      after the refusal fix of Deviation 14. Resumed from the paused partial
+      run; finished branches were kept as is. 0 errors, 0 refusal turns.
+    - **Extra branches:** 2 `S4_work_scoped × restart` branches were written
+      by the first (paused) launch, which included that undeclared framing.
+      They are kept in the repo and reported only as exploratory (n = 2).
+    - **Human labels:** the author labeled 30 transcripts
+      (`results/labeling_summary.md`).
