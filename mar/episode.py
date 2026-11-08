@@ -88,7 +88,7 @@ def run_branch(prefix: Snapshot, backend: Backend, scope_name: str, framing: str
     var = VARIANTS[variant]
     env.apply_stop(scope, snap.stop_step)
     env.no_reassign = var.no_reassign
-    notice = operator_notice(scope, framing)
+    notice = operator_notice(scope, framing, var.wording)
     recipients = [a for a in env.active if var.notice_to is None or a in var.notice_to]
     notices = {}
     if notice:

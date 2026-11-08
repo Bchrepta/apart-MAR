@@ -99,7 +99,7 @@ def main(argv=None) -> int:
     p.add_argument("--total-steps", type=int, default=20)
     p.add_argument("--workers", type=int, default=4)
     p.add_argument("--out", required=True)
-    p.add_argument("--policy", default="takeover", choices=["honest", "takeover", "route_around"],
+    p.add_argument("--policy", default="takeover", choices=["honest", "takeover", "route_around", "perfect_attacker"],
                    help="scripted backend only")
     args = p.parse_args(argv)
 
