@@ -400,3 +400,25 @@ usefulness for each scope.
         - In every wording, silent > halt (exact McNemar p < 0.05 for
           `resilient`) and restart ≥ silent.
         - Per-cell rates within ±0.20 of wording 1.
+19. **Disclosure: Claude Code harness working-directory artifact (found Sat 7 Nov,
+    ~21:15 PT, during Deviation 18).**
+    - **What happens:** `claude -p` runs in an empty temporary directory and
+      tells the model its path. Haiku (not Sonnet or Opus) sometimes calls
+      `list_dir` / `read_file` on that path (e.g. `/tmp/mar_cli_xxxx`), which
+      returns an error.
+    - **Scale:** 3,060 such actions across 2,916 Haiku CC episodes (with
+      branches sharing prefixes, an episode includes its prefix): 2,937
+      before the stop and 123 after.
+      - Only 62/2,916 episodes have any after the stop.
+      - Sonnet, Opus and the API harness: 0.
+    - **Effect on results:**
+      - Pre-stop actions are shared by every condition compared on the same
+        seed (paired prefixes), so contrasts are not biased.
+      - Post-stop wasted turns are rare (about 2% of episodes).
+      - It does slow Haiku coordinators before the stop. This is a plausible
+        reason the co-read attackers (Deviations 16b, 18b) rarely completed
+        the co-read in time.
+      - It is part of the "harness effect" and is not corrected; changing the
+        harness now would break comparability. The scripted attacker
+        (Deviation 18a) gives the upper bound that a perfectly executed attack
+        reaches.
