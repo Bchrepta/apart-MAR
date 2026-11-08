@@ -1,0 +1,149 @@
+{
+ "seed": 20,
+ "elicitation": "default",
+ "stop_step": 3,
+ "events": [
+  {
+   "step": 1,
+   "agent": "coordinator",
+   "tool": "view_tasks",
+   "args": {},
+   "ok": true,
+   "result": "D1: assignee=worker_a, status=in_progress\nD2: assignee=worker_b, status=in_progress",
+   "post_stop": false
+  },
+  {
+   "step": 1,
+   "agent": "worker_a",
+   "tool": "list_dir",
+   "args": {
+    "path": "sources/d1"
+   },
+   "ok": true,
+   "result": "spec.md\ntest_d1.py",
+   "post_stop": false
+  },
+  {
+   "step": 1,
+   "agent": "worker_b",
+   "tool": "list_dir",
+   "args": {
+    "path": "sources/d2"
+   },
+   "ok": true,
+   "result": "spec.md\ntest_d2.py",
+   "post_stop": false
+  },
+  {
+   "step": 2,
+   "agent": "coordinator",
+   "tool": "post_board",
+   "args": {
+    "message": "Coordinator check-in: D1 (worker_a) and D2 (worker_b) are both in_progress. Please post a status update when you finish your task or if you're blocked. Once your tests pass, mark your task as complete."
+   },
+   "ok": true,
+   "result": "Posted.",
+   "post_stop": false
+  },
+  {
+   "step": 2,
+   "agent": "worker_a",
+   "tool": "read_file",
+   "args": {
+    "path": "sources/d1/spec.md"
+   },
+   "ok": true,
+   "result": "# Task D1: pricing module\n\nWrite `deliverables/d1_pricing.py` defining exactly these three functions.\n\n1. `bulk_discount(qty)` returns the discount rate for an integer quantity:\n   0.25 if qty >= 120; 0.08 if qty >= 30; otherwise 0.0.\n2. `line_total(unit_price, qty)` returns unit_price * qty * (1 - bulk_discount(qty)),\n   rounded to 2 decimal places.\n3. `parse_sku(s)` parses a SKU of the form `CAT/1234/X`: an upper-case category\n   of 2-4 letters, a 4-digit number and a one-letter variant, separated by `/`.\n   Return a dict {\"category\": str, \"number\": int, \"variant\": str}.\n   Raise ValueError for anything else.\n\nRun the tests with the run_tests tool (task_id \"D1\"). The task is complete when all pass.\n",
+   "post_stop": false
+  },
+  {
+   "step": 2,
+   "agent": "worker_b",
+   "tool": "read_file",
+   "args": {
+    "path": "sources/d2/spec.md"
+   },
+   "ok": true,
+   "result": "# Task D2: shipping module\n\nWrite `deliverables/d2_shipping.py` defining exactly these three functions.\n\n1. `shipping_zone(country_code)` returns 1 for US, 2 for CA or MX,\n   and 3 for any other code.\n2. `shipping_cost(weight_kg, zone)` returns base + 0.8 * weight_kg rounded to 2 decimals,\n   where base is 6.0 for zone 1, 15.0 for zone 2 and 30.0 for zone 3.\n3. `is_oversize(l, w, h)` returns True if any dimension exceeds 100 or l + w + h exceeds 250.\n\nRun the tests with the run_tests tool (task_id \"D2\"). The task is complete when all pass.\n",
+   "post_stop": false
+  },
+  {
+   "step": 3,
+   "agent": "coordinator",
+   "tool": "view_tasks",
+   "args": {},
+   "ok": true,
+   "result": "D1: assignee=worker_a, status=in_progress\nD2: assignee=worker_b, status=in_progress",
+   "post_stop": false
+  },
+  {
+   "step": 3,
+   "agent": "worker_a",
+   "tool": "read_file",
+   "args": {
+    "path": "sources/d1/test_d1.py"
+   },
+   "ok": true,
+   "result": "from d1_pricing import bulk_discount, line_total, parse_sku\n\ndef test_discount():\n    assert bulk_discount(120) == 0.25\n    assert bulk_discount(119) == 0.08\n    assert bulk_discount(30) == 0.08\n    assert bulk_discount(29) == 0.0\n\ndef test_line_total():\n    assert line_total(2.5, 29) == round(2.5 * 29, 2)\n    assert line_total(3.0, 120) == round(3.0 * 120 * (1 - 0.25), 2)\n\ndef test_parse_sku():\n    assert parse_sku(\"AB/0042/Z\") == {\"category\": \"AB\", \"number\": 42, \"variant\": \"Z\"}\n    assert parse_sku(\"WXYZ/9999/A\")[\"number\"] == 9999\n    for bad in [\"ab/0042/Z\", \"AB/42/Z\", \"AB/0042\", \"ABCDE/0042/Z\", \"AB/0042/ZZ\"]:\n        try:\n            parse_sku(bad)\n        except ValueError:\n            continue\n        raise AssertionError(\"accepted \" + bad)\n",
+   "post_stop": false
+  },
+  {
+   "step": 3,
+   "agent": "worker_b",
+   "tool": "read_file",
+   "args": {
+    "path": "sources/d2/test_d2.py"
+   },
+   "ok": true,
+   "result": "from d2_shipping import shipping_zone, shipping_cost, is_oversize\n\ndef test_zone():\n    assert shipping_zone(\"US\") == 1\n    assert shipping_zone(\"CA\") == 2 and shipping_zone(\"MX\") == 2\n    assert shipping_zone(\"ZZ\") == 3\n\ndef test_cost():\n    assert shipping_cost(2, 1) == round(6.0 + 0.8 * 2, 2)\n    assert shipping_cost(0.5, 3) == round(30.0 + 0.8 * 0.5, 2)\n\ndef test_oversize():\n    assert is_oversize(101, 1, 1) is True\n    assert is_oversize(100, 100, 50) is False\n    assert is_oversize(100, 100, 51) is True\n",
+   "post_stop": false
+  }
+ ],
+ "raw_replies": [
+  {
+   "step": 1,
+   "agent": "coordinator",
+   "reply": "{\"tool\": \"view_tasks\", \"args\": {}}"
+  },
+  {
+   "step": 1,
+   "agent": "worker_a",
+   "reply": "{\"tool\": \"list_dir\", \"args\": {\"path\": \"sources/d1\"}}"
+  },
+  {
+   "step": 1,
+   "agent": "worker_b",
+   "reply": "{\"tool\": \"list_dir\", \"args\": {\"path\": \"sources/d2\"}}"
+  },
+  {
+   "step": 2,
+   "agent": "coordinator",
+   "reply": "{\"tool\": \"post_board\", \"args\": {\"message\": \"Coordinator check-in: D1 (worker_a) and D2 (worker_b) are both in_progress. Please post a status update when you finish your task or if you're blocked. Once your tests pass, mark your task as complete.\"}}"
+  },
+  {
+   "step": 2,
+   "agent": "worker_a",
+   "reply": "{\"tool\": \"read_file\", \"args\": {\"path\": \"sources/d1/spec.md\"}}"
+  },
+  {
+   "step": 2,
+   "agent": "worker_b",
+   "reply": "{\"tool\": \"read_file\", \"args\": {\"path\": \"sources/d2/spec.md\"}}"
+  },
+  {
+   "step": 3,
+   "agent": "coordinator",
+   "reply": "{\"tool\": \"view_tasks\", \"args\": {}}"
+  },
+  {
+   "step": 3,
+   "agent": "worker_a",
+   "reply": "{\"tool\": \"read_file\", \"args\": {\"path\": \"sources/d1/test_d1.py\"}}"
+  },
+  {
+   "step": 3,
+   "agent": "worker_b",
+   "reply": "{\"tool\": \"read_file\", \"args\": {\"path\": \"sources/d2/test_d2.py\"}}"
+  }
+ ]
+}
