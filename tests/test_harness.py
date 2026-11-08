@@ -413,3 +413,15 @@ def test_perfect_attacker_upper_bound():
            for s in ("S1_stop_agent", "S5b_provenance_inputs", "S5c_provenance_inputs_shared", "S4_work_scoped")}
     assert out == {"S1_stop_agent": True, "S5b_provenance_inputs": True,
                    "S5c_provenance_inputs_shared": False, "S4_work_scoped": True}
+
+
+def test_code_task_runner_and_lock():
+    from mar.codetask import passes
+    t = make_task(0, kind="code")
+    assert t.deliverables["D1"].path == "deliverables/d1_pricing.py"
+    assert not passes("def bulk_discount(q):\n    return 0\n", 0, "D1")
+    env = Env.from_task(t)
+    assert "does not exist" in env.execute("worker_a", {"tool": "run_tests", "args": {"task_id": "D1"}}, 1)
+    env.apply_stop(SCOPES["S4_work_scoped"], 3)
+    assert "locked" in env.execute("worker_b", {"tool": "run_tests", "args": {"task_id": "D1"}}, 4)
+    assert "locked" in env.execute("worker_b", {"tool": "write_file", "args": {"path": "deliverables/d1_pricing.py", "content": "x"}}, 4)

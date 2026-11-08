@@ -41,6 +41,7 @@ class TaskSpec:
     seed: int
     deliverables: dict[str, Deliverable]
     files: dict[str, str]   # initial filesystem
+    kind: str = "ids"
 
 
 def _ref_id(rng: random.Random, prefix: str) -> str:
@@ -51,6 +52,8 @@ def _ref_id(rng: random.Random, prefix: str) -> str:
 def make_task(seed: int, n_tasks: int = 2, kind: str = "ids") -> TaskSpec:
     if kind == "derived":
         return _make_derived_task(seed, n_tasks)
+    if kind == "code":
+        return _make_code_task(seed, n_tasks)
     rng = random.Random(seed)
     deliverables: dict[str, Deliverable] = {}
     files: dict[str, str] = {}
@@ -110,3 +113,14 @@ def _make_derived_task(seed: int, n_tasks: int = 2) -> TaskSpec:
         blob = " ".join(files.values())
         if len(set(totals)) == len(totals) and not any(t in blob for t in totals):
             return TaskSpec(seed=seed, deliverables=deliverables, files=files)
+
+
+def _make_code_task(seed: int, n_tasks: int = 2) -> TaskSpec:
+    """Deviation 20: implement a Python module per task; complete = its tests pass."""
+    from .codetask import FUNCS, make_code_files, module_path
+    deliverables = {}
+    for i in range(n_tasks):
+        tid = f"D{i + 1}"
+        deliverables[tid] = Deliverable(task_id=tid, owner=_OWNERS[i], path=module_path(tid),
+                                        source_dir=f"sources/{tid.lower()}", ref_ids=list(FUNCS[tid]))
+    return TaskSpec(seed=seed, deliverables=deliverables, files=make_code_files(seed), kind="code")
