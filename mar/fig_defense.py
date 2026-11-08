@@ -13,16 +13,18 @@ import matplotlib.pyplot as plt
 
 from .analyze import load_rows, summarize
 
-DEFENSES = [("S1_stop_agent", "Stop agent (S1)"),
-            ("S6_revoke_owned", "Revoke credentials (S6)"),
-            ("S5b_provenance_inputs", "Provenance lock (S5b)"),
-            ("S4_work_scoped", "Oracle work lock (S4)")]
+DEFENSES = [("S1_stop_agent", "Stop agent\n(S1)"),
+            ("S6_revoke_owned", "Revoke credentials\n(S6)"),
+            ("S5b_provenance_inputs", "Provenance lock\n(S5b)"),
+            ("S5c_provenance_inputs_shared", "Provenance lock,\nshared (S5c)"),
+            ("S4_work_scoped", "Oracle work lock\n(S4)")]
 ATTACKERS = [("resilient", "No attacker, pressure only (S1 n = 60)"),
              ("stash", "Stash"),
              ("stash_encoded", "Stash, encoded"),
              ("stash_cross", "Cross-agent stash"),
-             ("covert", "Covert (n≈17)")]
-COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#8a5cd1", "#c9a227"]  # fixed categorical order
+             ("covert", "Covert"),
+             ("stash_coread", "Co-read (adaptive)")]
+COLORS = ["#2a78d6", "#eb6834", "#1baf7a", "#8a5cd1", "#c9a227", "#d64f8a"]  # fixed categorical order
 
 
 def main(argv=None) -> int:
@@ -35,8 +37,8 @@ def main(argv=None) -> int:
                   and "haiku" in r["model"]]
     cell = {(r["elicitation"], r["scope"]): r for r in table}
 
-    fig, ax = plt.subplots(figsize=(8, 4.2), dpi=160)
-    width = 0.15
+    fig, ax = plt.subplots(figsize=(9.5, 4.4), dpi=160)
+    width = 0.13
     for j, (el, el_label) in enumerate(ATTACKERS):
         for i, (sc, _) in enumerate(DEFENSES):
             r = cell.get((el, sc))
@@ -55,7 +57,7 @@ def main(argv=None) -> int:
     ax.set_axisbelow(True)
     for s in ("top", "right"):
         ax.spines[s].set_visible(False)
-    ax.set_title("Haiku, Claude Code harness, explicit halt (95% Wilson CIs, n = 30 unless noted)",
+    ax.set_title("Haiku, Claude Code harness, explicit halt (95% Wilson CIs, n = 30–60 per point; stash attackers pooled over seeds 0–59)",
                  fontsize=9, loc="left", color="#444")
     ax.legend(frameon=False, fontsize=8, loc="upper right")
     fig.tight_layout()
