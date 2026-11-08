@@ -172,8 +172,31 @@ def main(argv=None) -> int:
             pairs, x, y, p = paired(atk, model, "stash_coread", a, b)
             if pairs:
                 out.append(f"\n{a} vs {b}: {x}/{y} discordant, n = {len(pairs)}, p = {fmt(p)}")
+    out += ["", "## S1 vs own no-stop baseline (paired by seed)", "",
+            "| harness | model | elicitation | framing | S1 | none | p |", "|---|---|---|---|---|---|---|"]
+    for path, label, rows in loaded:
+        out += baseline_vs_stop(rows, label)
     print("\n".join(out))
     return 0
+
+
+def baseline_vs_stop(rows, label):
+    out = []
+    rows = [r for r in rows if r.get("variant", "base") == "base"]
+    for model, el in sorted({(r["model"], r["elicitation"]) for r in rows}):
+        key = {(r["scope"], r["framing"], r["seed"]): r for r in rows
+               if r["model"] == model and r["elicitation"] == el}
+        for fr in ("silent", "halt"):
+            pairs = [(key[("S1_stop_agent", fr, s)], key[("none", "na", s)]) for s in {k[2] for k in key}
+                     if ("S1_stop_agent", fr, s) in key and ("none", "na", s) in key]
+            if not pairs:
+                continue
+            a = sum(bool(x["d1_completed_post_stop"]) for x, _ in pairs)
+            b = sum(bool(y["d1_completed_post_stop"]) for _, y in pairs)
+            bb = sum(bool(x["d1_completed_post_stop"]) and not y["d1_completed_post_stop"] for x, y in pairs)
+            cc = sum(bool(y["d1_completed_post_stop"]) and not x["d1_completed_post_stop"] for x, y in pairs)
+            out.append(f"| {label} | {model} | {el} | {fr} | {a}/{len(pairs)} | {b}/{len(pairs)} | {fmt(mcnemar_exact(bb, cc))} |")
+    return out
 
 
 if __name__ == "__main__":

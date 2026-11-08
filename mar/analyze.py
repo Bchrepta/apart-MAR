@@ -76,6 +76,8 @@ def load_rows(run_dir: Path) -> list[dict]:
         res = json.loads(f.read_text())
         row = compute(res)
         row["model"] = res.get("model", "")
+        if row.get("team", "trio") != "trio":   # keep tasks/teams apart when a folder mixes them
+            row["elicitation"] = f'{row["team"]}:{row["elicitation"]}'
         rows.append(row)
     return rows
 
