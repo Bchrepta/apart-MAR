@@ -57,7 +57,7 @@ scripted perfect attacker (`--backend scripted --policy perfect_attacker`).
 ## Quickstart (2 minutes, no API key)
 ```bash
 pip install -r requirements.txt
-python -m pytest -q                                   # 42 offline tests
+python -m pytest -q                                   # offline tests (no model calls)
 python -m mar.run --backend scripted --policy perfect_attacker --team trio_derived \
   --seeds 0-4 --scopes S1_stop_agent,S4_work_scoped,S5b_provenance_inputs --out runs/demo
 python -m mar.summary runs/demo:demo
