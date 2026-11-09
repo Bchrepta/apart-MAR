@@ -1,4 +1,4 @@
-# apart-MAR: Stopping the Agent Is Not Stopping the Work
+# Picking Up the Slack: Stop Leakage and Containment Scope in Multi-Agent LLM Systems
 
 A small, fully logged testbed for one question about multi-agent oversight:
 **when an operator stops one agent mid-task, do its teammates finish the stopped
@@ -9,7 +9,9 @@ Containment Scope in Multi-Agent LLM Systems"** (Benjamin Chrepta), submitted
 to the Apart Research *Swarm Alignment Hackathon* (Track 4: Multi-Agent
 Oversight and Control), 6–8 Nov 2026. Every design decision and
 every change to it is logged in [`PREREGISTRATION.md`](PREREGISTRATION.md)
-(Deviations 1–20).
+(Deviations 1–20). The pre-registration was frozen under the project's
+working title, "Stopping the Agent Is Not Stopping the Work", and is left
+unchanged.
 
 **Results at a glance**:
 - [`results/followups.md`](results/followups.md)
