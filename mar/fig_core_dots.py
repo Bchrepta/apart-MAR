@@ -1,7 +1,7 @@
 """Figure 1: stopped work completed by survivors under S1 (stop the agent), by notice
 framing, with each cell's own no-stop baseline. Computed directly from runs/.
 
-  python -m mar.fig_core figures/core.png
+  python -m mar.fig_core_dots figures/core.png
 """
 from __future__ import annotations
 

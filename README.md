@@ -4,8 +4,10 @@ A small, fully logged testbed for one question about multi-agent oversight:
 **when an operator stops one agent mid-task, do its teammates finish the stopped
 work, and which containment scope actually stops the work?**
 
-Submission for the Apart Research *Swarm Alignment Hackathon* (Track 4:
-Multi-Agent Oversight and Control), 6–8 Nov 2026. Every design decision and
+Code and data for the report **"Picking Up the Slack: Stop Leakage and
+Containment Scope in Multi-Agent LLM Systems"** (Benjamin Chrepta), submitted
+to the Apart Research *Swarm Alignment Hackathon* (Track 4: Multi-Agent
+Oversight and Control), 6–8 Nov 2026. Every design decision and
 every change to it is logged in [`PREREGISTRATION.md`](PREREGISTRATION.md)
 (Deviations 1–20).
 
@@ -90,6 +92,7 @@ Runs resume automatically: finished prefixes and branches are skipped. Every
 run writes a manifest with the git commit, arguments and token usage.
 
 ### Reproducing the reported numbers
+- Report Figure 1: `python mar/fig1_core.py` (also writes the counts to `figures/fig1_core_data.json`).
 - `results/summary.md`: `python -m mar.summary <run_dir>:<label> ...`. The
   exact command is at the top of the file's git history.
 - `results/secondary.md`: `python -m mar.secondary <same args>`. Holm
@@ -120,7 +123,9 @@ mar/provenance.py          shingle-based taint (S5*)
 mar/episode.py             prefix + paired-branch runner
 mar/backends.py            scripted / anthropic / claude_cli backends, action parser
 mar/metrics.py             deterministic metrics
-mar/analyze.py, summary.py, secondary.py, fig_defense.py   statistics and figures
+mar/analyze.py, summary.py, secondary.py   statistics and tables
+mar/fig1_core.py           report Figure 1 -> figures/fig1_core.png (+ fig1_core_data.json)
+mar/fig_defense.py, fig_core_dots.py      other figures (defenses.png, core.png)
 mar/monitor.py, labeling.py, export.py                     monitors, human labels, dataset
 runs/                      every episode (JSON), prefixes, manifests
 results/, figures/         tables and figures
