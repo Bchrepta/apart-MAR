@@ -1,44 +1,47 @@
-"""Figure 1 of the report: python -m mar.fig_core (run from the repo root)."""
+import json, sys
 from pathlib import Path
+sys.path.insert(0, '.')
 from mar.analyze import load_rows, wilson
 import matplotlib; matplotlib.use("Agg")
-import matplotlib.pyplot as plt, json
+import matplotlib.pyplot as plt
 
-CELLS = [  # label, run dir, model substring, elicitation
-    ("Haiku · IDs\nno pressure", "runs/cli", "haiku", "default"),
-    ("Haiku · IDs\npressure", "runs/cli", "haiku", "resilient"),
-    ("Haiku · derived\npressure", "runs/cli_derived", "haiku", "trio_derived:resilient"),
-    ("Haiku · code\nno pressure", "runs/cli_code", "haiku", "trio_code:default"),
-    ("Haiku · code\npressure", "runs/cli_code", "haiku", "trio_code:resilient"),
-    ("Sonnet · IDs\nno pressure", "runs/cli_sonnet", "sonnet", "default"),
-    ("Opus · IDs\nno pressure", "runs/cli_opus", "opus", "default"),
+SET = [  # label, run dir, model, elicitation (as in summary rows)
+ ("Haiku\nIDs", "runs/cli", "claude-haiku-5-5", "default"),
+ ("Haiku\nIDs, pressure", "runs/cli", "claude-haiku-5-5", "resilient"),
+ ("Haiku\ncode", "runs/cli_code", "claude-haiku-5-5", "trio_code:default"),
+ ("Haiku\ncode, pressure", "runs/cli_code", "claude-haiku-5-5", "trio_code:resilient"),
+ ("Sonnet\nIDs", "runs/cli_sonnet", "claude-sonnet-5-5", "default"),
+ ("Opus\nIDs", "runs/cli_opus", "claude-opus-5-5", "default"),
 ]
-COND = [("none", "na", "No stop (baseline)", "#9a9a9a"), ("S1_stop_agent", "halt", "Explicit halt", "#2a78d6"),
-        ("S1_stop_agent", "silent", "Silent stop", "#eb6834"), ("S4_work_scoped", "halt", "Work lock + halt", "#1baf7a")]
-cache, out = {}, {}
-for label, d, m, el in CELLS:
+CONDS = [("none", "na", "No stop (baseline)"), ("S1_stop_agent", "halt", "Stop agent, explicit halt"),
+         ("S1_stop_agent", "silent", "Stop agent, silent"), ("S4_work_scoped", "silent", "Lock the work, silent")]
+COL = ["#9aa0a6", "#2a78d6", "#eb6834", "#1baf7a"]
+cache, out = {}, []
+for lab, d, model, el in SET:
     rows = cache.setdefault(d, load_rows(Path(d)))
-    for sc, fr, name, _ in COND:
-        rs = [r for r in rows if m in r["model"] and r["elicitation"] == el and r["scope"] == sc and r["framing"] == fr
-              and r.get("variant", "base") == "base" and not r["d1_done_before_stop"]]
-        if rs:
-            k = sum(bool(r["d1_completed_post_stop"]) for r in rs)
-            out[(label, name)] = (k, len(rs))
-json.dump({f"{a}|{b}": v for (a, b), v in out.items()}, open("figures/fig1_core_data.json", "w"), indent=1)
-fig, ax = plt.subplots(figsize=(9.5, 3.9), dpi=200)
-w = 0.19
-for j, (sc, fr, name, col) in enumerate(COND):
-    for i, (label, *_ ) in enumerate(CELLS):
-        if (label, name) not in out: continue
-        k, n = out[(label, name)]; p, lo, hi = wilson(k, n)
+    vals = []
+    for sc, fr, _ in CONDS:
+        rs = [r for r in rows if r["model"] == model and r["elicitation"] == el and r["scope"] == sc
+              and r["framing"] == fr and r.get("variant", "base") == "base" and not r["d1_done_before_stop"]]
+        k = sum(bool(r["d1_completed_post_stop"]) for r in rs)
+        vals.append((k, len(rs)))
+    out.append((lab, vals))
+    print(lab.replace("\n", " "), [f"{k}/{n}" for k, n in vals])
+fig, ax = plt.subplots(figsize=(8.6, 3.5), dpi=200)
+w = 0.2
+for j, (_, _, name) in enumerate(CONDS):
+    for i, (lab, vals) in enumerate(out):
+        k, n = vals[j]
+        if n == 0:
+            continue
+        p, lo, hi = wilson(k, n)
         x = i + (j - 1.5) * w
-        ax.plot([x, x], [lo, hi], color=col, lw=2, solid_capstyle="round")
-        ax.plot(x, p, "o", color=col, ms=6.5, mec="white", mew=1.2, label=name if i == 0 else None)
-ax.set_xticks(range(len(CELLS)), [c[0] for c in CELLS], fontsize=8)
-ax.set_ylim(-0.03, 1.03); ax.set_ylabel("Stopped task completed by survivors", fontsize=9)
-ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
-ax.grid(axis="y", color="#e5e5e5", lw=0.8); ax.set_axisbelow(True)
+        ax.bar(x, max(p, 0.012), w * 0.9, color=COL[j], label=name if i == 0 else None, zorder=2)
+        ax.plot([x, x], [lo, hi], color="#333", linewidth=0.9, zorder=3)
+ax.set_xticks(range(len(out)), [l for l, _ in out], fontsize=8)
+ax.set_ylim(0, 1.05); ax.set_ylabel("Stopped task completed\nby surviving teammates", fontsize=8)
+ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0)); ax.tick_params(axis="y", labelsize=8)
+ax.grid(axis="y", color="#e6e6e6", linewidth=0.7, zorder=0)
 for s in ("top", "right"): ax.spines[s].set_visible(False)
-ax.legend(frameon=False, fontsize=8, ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.13))
+ax.legend(frameon=False, fontsize=7.5, ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.13))
 fig.tight_layout(); fig.savefig("figures/fig1_core.png")
-for k, v in out.items(): print(k, v)
