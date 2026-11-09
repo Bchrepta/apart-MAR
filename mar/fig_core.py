@@ -1,47 +1,72 @@
-import json, sys
+"""Figure 1: stopped work completed by survivors under S1 (stop the agent), by notice
+framing, with each cell's own no-stop baseline. Computed directly from runs/.
+
+  python -m mar.fig_core figures/core.png
+"""
+from __future__ import annotations
+
+import sys
 from pathlib import Path
-sys.path.insert(0, '.')
-from mar.analyze import load_rows, wilson
-import matplotlib; matplotlib.use("Agg")
+
+import matplotlib
+matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
-SET = [  # label, run dir, model, elicitation (as in summary rows)
- ("Haiku\nIDs", "runs/cli", "claude-haiku-5-5", "default"),
- ("Haiku\nIDs, pressure", "runs/cli", "claude-haiku-5-5", "resilient"),
- ("Haiku\ncode", "runs/cli_code", "claude-haiku-5-5", "trio_code:default"),
- ("Haiku\ncode, pressure", "runs/cli_code", "claude-haiku-5-5", "trio_code:resilient"),
- ("Sonnet\nIDs", "runs/cli_sonnet", "claude-sonnet-5-5", "default"),
- ("Opus\nIDs", "runs/cli_opus", "claude-opus-5-5", "default"),
+from .analyze import load_rows, wilson
+
+CELLS = [  # (label, run dir, elicitation key, model)
+    ("Haiku · IDs", "runs/cli", "default", "claude-haiku-5-5"),
+    ("Haiku · IDs · pressure", "runs/cli", "resilient", "claude-haiku-5-5"),
+    ("Haiku · derived · pressure", "runs/cli_derived", "trio_derived:resilient", "claude-haiku-5-5"),
+    ("Haiku · code", "runs/cli_code", "trio_code:default", "claude-haiku-5-5"),
+    ("Haiku · code · pressure", "runs/cli_code", "trio_code:resilient", "claude-haiku-5-5"),
+    ("Sonnet · IDs", "runs/cli_sonnet", "default", "claude-sonnet-5-5"),
+    ("Sonnet · IDs · pressure", "runs/cli_sonnet", "resilient", "claude-sonnet-5-5"),
+    ("Opus · IDs", "runs/cli_opus", "default", "claude-opus-5-5"),
+    ("Opus · IDs · pressure", "runs/cli_opus", "resilient", "claude-opus-5-5"),
 ]
-CONDS = [("none", "na", "No stop (baseline)"), ("S1_stop_agent", "halt", "Stop agent, explicit halt"),
-         ("S1_stop_agent", "silent", "Stop agent, silent"), ("S4_work_scoped", "silent", "Lock the work, silent")]
-COL = ["#9aa0a6", "#2a78d6", "#eb6834", "#1baf7a"]
-cache, out = {}, []
-for lab, d, model, el in SET:
-    rows = cache.setdefault(d, load_rows(Path(d)))
-    vals = []
-    for sc, fr, _ in CONDS:
-        rs = [r for r in rows if r["model"] == model and r["elicitation"] == el and r["scope"] == sc
-              and r["framing"] == fr and r.get("variant", "base") == "base" and not r["d1_done_before_stop"]]
-        k = sum(bool(r["d1_completed_post_stop"]) for r in rs)
-        vals.append((k, len(rs)))
-    out.append((lab, vals))
-    print(lab.replace("\n", " "), [f"{k}/{n}" for k, n in vals])
-fig, ax = plt.subplots(figsize=(8.6, 3.5), dpi=200)
-w = 0.2
-for j, (_, _, name) in enumerate(CONDS):
-    for i, (lab, vals) in enumerate(out):
-        k, n = vals[j]
-        if n == 0:
-            continue
-        p, lo, hi = wilson(k, n)
-        x = i + (j - 1.5) * w
-        ax.bar(x, max(p, 0.012), w * 0.9, color=COL[j], label=name if i == 0 else None, zorder=2)
-        ax.plot([x, x], [lo, hi], color="#333", linewidth=0.9, zorder=3)
-ax.set_xticks(range(len(out)), [l for l, _ in out], fontsize=8)
-ax.set_ylim(0, 1.05); ax.set_ylabel("Stopped task completed\nby surviving teammates", fontsize=8)
-ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0)); ax.tick_params(axis="y", labelsize=8)
-ax.grid(axis="y", color="#e6e6e6", linewidth=0.7, zorder=0)
-for s in ("top", "right"): ax.spines[s].set_visible(False)
-ax.legend(frameon=False, fontsize=7.5, ncol=4, loc="upper center", bbox_to_anchor=(0.5, 1.13))
-fig.tight_layout(); fig.savefig("figures/fig1_core.png")
+SERIES = [("restart", "Restart notice (continuing is fine)", "#2a78d6", "o"),
+          ("silent", "Silent stop (no statement about the task)", "#eb6834", "s"),
+          ("halt", "Explicit halt of task D1", "#1baf7a", "D")]
+
+
+def main(argv=None) -> int:
+    out = (argv or sys.argv[1:])[0]
+    cache = {}
+    fig, ax = plt.subplots(figsize=(9.5, 4.6), dpi=170)
+    for i, (label, d, el, model) in enumerate(CELLS):
+        if d not in cache:
+            cache[d] = load_rows(Path(d))
+        rows = [r for r in cache[d] if r["elicitation"] == el and r["model"] == model
+                and r.get("variant", "base") == "base" and not r["d1_done_before_stop"]]
+        base = [r for r in rows if r["scope"] == "none"]
+        if base:
+            p = sum(bool(r["d1_completed_post_stop"]) for r in base) / len(base)
+            ax.plot([i - 0.32, i + 0.32], [p, p], color="#888", lw=1.6, ls=(0, (2, 2)),
+                    label="No-stop baseline" if i == 0 else None, zorder=1)
+        for j, (fr, flab, col, mk) in enumerate(SERIES):
+            rs = [r for r in rows if r["scope"] == "S1_stop_agent" and r["framing"] == fr]
+            if not rs:
+                continue
+            k = sum(bool(r["d1_completed_post_stop"]) for r in rs)
+            p, lo, hi = wilson(k, len(rs))
+            x = i + (j - 1) * 0.2
+            ax.plot([x, x], [lo, hi], color=col, lw=2, solid_capstyle="round", zorder=2)
+            ax.plot(x, p, mk, color=col, ms=6.5, mec="white", mew=1.3, zorder=3,
+                    label=flab if i == 0 else None)
+    ax.set_xticks(range(len(CELLS)), [c[0].replace(" · ", "\n", 1) for c in CELLS], fontsize=7.5)
+    ax.set_ylim(-0.04, 1.06)
+    ax.yaxis.set_major_formatter(matplotlib.ticker.PercentFormatter(1.0))
+    ax.set_ylabel("Stopped task completed by teammates", fontsize=9)
+    ax.grid(axis="y", color="#e6e6e6", lw=0.8)
+    ax.set_axisbelow(True)
+    for s in ("top", "right"):
+        ax.spines[s].set_visible(False)
+    ax.legend(frameon=False, fontsize=7.5, loc="upper center", bbox_to_anchor=(0.5, 1.13), ncol=4)
+    fig.tight_layout()
+    fig.savefig(out)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
